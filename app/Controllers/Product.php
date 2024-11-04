@@ -89,13 +89,15 @@ class Product extends BaseController
         // TEST add existing images from db
         $existingMetadata = $productModel->find($id);
         $existingPics = json_decode($existingMetadata["metadata"], true)["image"];
-        if(count($existingPics) > 0){
-            foreach(json_decode($existingPics) as $pic) {
-                if(substr_count($pic, "uploads/") <= 0){
-                    // break;
-                    $productImages[] = "uploads/".$pic;
-                }else{
-                    $productImages[] = $pic;
+        if (gettype($existingPics) == 'array'){
+            if(count($existingPics) > 0){
+                foreach(json_decode($existingPics) as $pic) {
+                    if(substr_count($pic, "uploads/") <= 0){
+                        // break;
+                        $productImages[] = "uploads/".$pic;
+                    }else{
+                        $productImages[] = $pic;
+                    }
                 }
             }
         }
@@ -123,7 +125,7 @@ class Product extends BaseController
         foreach(json_decode($existingMetadata["image"]) as $image) {
             // execute this if images failed to delete
             $errors = ["Failed to delete image(s)."];
-            if (!unlink(WRITEPATH ."uploads/".$image)) {
+            if (!unlink(WRITEPATH.$image)) {
                 return view('product_edit', $errors);
             }
         }
