@@ -46,18 +46,13 @@ class Product extends BaseController
         $product = new \App\Entities\Product();
         $data = [
             'name' => $this->request->getPost('name'),
-            'image' => $this->request->getPost('image'),
+            'image' => $this->request->getFiles('image'),
             'manufacturer' => $this->request->getPost('manufacturer'),
             'weight' => $this->request->getPost('weight'),
             'size' => $this->request->getPost('size'),
         ];
 
         switch ($data):
-            case !str_contains($data['image'], 'http'):
-                // Return error message if image is not a url
-                return view('product_edit', [
-                    'errors' => 'Image must be a valid url'
-                ]);
             case !str_contains($data['weight'], 'Kg'):
                 $data['weight'] = $data['weight'] . 'Kg';
             case !str_contains($data['size'], 'Cm³'):
@@ -66,23 +61,110 @@ class Product extends BaseController
 
         $rule = [
             'name' => 'required|min_length[3]|max_length[255]',
-            'image' => 'required|min_length[10]|max_length[255]',
+            'image' => [
+                'label' => 'Image',
+                'rules' => 'max_size[image,1024]|max_dims[image,1024,768]|mime_in[image,image/jpg,image/jpeg,image/png]',
+            ],
             'manufacturer' => 'required|min_length[3]|max_length[255]',
             'weight' => 'required|numeric',
             'size' => 'required|numeric',
         ];
+
         if (!$this->validate($rule)) {
             return view('product_edit', [
                 'errors' => $this->validator->getErrors(),
                 'product' => $productModel->find($id),
             ]);
         }
+
+        $images = $this->request->getFiles();
+        $productImages = [];
+        foreach ($images['image'] as $image) {
+            if($image->isValid() && !$image->hasMoved()) {
+                $newPath = $image->move(WRITEPATH . 'uploads', $image->getName());
+                $productImages[] = "uploads/".$image->getName();
+            }
+        }
+
+        // TEST add existing images from db
+        $existingMetadata = $productModel->find($id);
+        $existingPics = json_decode($existingMetadata["metadata"], true)["image"];
+        if(count($existingPics) > 0){
+            foreach(json_decode($existingPics) as $pic) {
+                if(substr_count($pic, "uploads/") <= 0){
+                    // break;
+                    $productImages[] = "uploads/".$pic;
+                }else{
+                    $productImages[] = $pic;
+                }
+            }
+        }
+        // print_r($productImages);
+        
+        $data['image'] = json_encode($productImages);
+
         $data['metadata'] = json_encode(array_slice($data, 1));
         $product->fill($data);
+
         if ($productModel->update($id, $data)) {
             return view('success_message', [
                 'message' => 'product ' . $product->name . ' has been updated'
             ]);
+        }
+    }
+
+    public function deleteImages(int $id)
+    {
+        $productModel = new \App\Models\ProductModel();
+        $existingProduct = $productModel->find($id);
+        $existingRawMetadata = $existingProduct["metadata"];
+        $existingMetadata = json_decode($existingRawMetadata, true);
+
+        foreach(json_decode($existingMetadata["image"]) as $image) {
+            // execute this if images failed to delete
+            $errors = ["Failed to delete image(s)."];
+            if (!unlink(WRITEPATH ."uploads/".$image)) {
+                return view('product_edit', $errors);
+            }
+        }
+
+        $existingMetadata["image"] = [];
+        $existingProduct["metadata"] = json_encode($existingMetadata);
+        $data['product'] = $existingProduct;
+        if ($productModel->update($id, $existingProduct)) {
+            return view('product_edit', $data);
+        }
+    }
+
+    public function deleteSingleImage(int $id, string $name)
+    {
+        $productModel = new \App\Models\ProductModel();
+        $existingProduct = $productModel->find($id);
+        $existingRawMetadata = $existingProduct["metadata"];
+        $existingMetadata = json_decode($existingRawMetadata, true);
+
+        $images = json_decode($existingMetadata["image"], true);
+
+        for($x = 0; $x < count($images); $x++) {
+            if ($images[$x] == "uploads/".$name) {
+                unset($images[$x]);
+                if (!unlink(WRITEPATH ."uploads/".$name)) {
+                    $errors = ["Failed to delete image(s)."];
+                    return view('product_edit', $errors);
+                }
+                break;
+            }
+        }
+  
+        $existingMetadata["image"] = json_encode($images);
+
+        $existingProduct["metadata"] = json_encode($existingMetadata);
+        
+        print_r($existingMetadata);
+        $data['product'] = $existingProduct;
+
+        if ($productModel->update($id, $existingProduct)) {
+            return view('product_edit', $data);
         }
     }
 
@@ -101,16 +183,6 @@ class Product extends BaseController
 
     public function create()
     {
-        $config = \Config\Services::config();
-
-        // $file = new \CodeIgniter\Files\File('uploads');
-
-        // $config['upload_path'] = WRITEPATH . 'uploads';
-        // $config['allowed_types'] = 'jpg|jpeg|png';
-        // $config['max_size'] = 1024;
-        // $config['max_width'] = 1024;
-        // $config['max_height'] = 768;
-
         $productModel = new \App\Models\ProductModel();
         $product = new \App\Entities\Product();
 
@@ -125,12 +197,6 @@ class Product extends BaseController
         // $errors = [];
 
         switch ($data):
-            // case !str_contains($data['image'], 'http'):
-                // Return error message if image is not a url
-                // return view('product_edit', [
-                //     'errors' => 'Image must be a valid url'
-                // ]);
-                // $errors[] = 'Image must be a valid url';
             case !str_contains($data['weight'], 'Kg'):
                 $data['weight'] = $data['weight'] . 'Kg';
             case !str_contains($data['size'], 'Cm³'):
@@ -161,14 +227,11 @@ class Product extends BaseController
         $productImages = [];
         foreach ($images['image'] as $image) {
             if($image->isValid() && !$image->hasMoved()) {
-                // if(!$image->hasMoved()) {
                 $newPath = $image->move(WRITEPATH . 'uploads', $image->getName());
-                // $productImages[] = $newPath->getRealPath();
                 $productImages[] = "uploads/".$image->getName();
             }
         }
         $data['image'] = json_encode($productImages);
-        // $data['image'] = $images;
 
         $data['metadata'] = json_encode(array_slice($data, 1));
         $product->fill($data);

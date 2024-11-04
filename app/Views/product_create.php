@@ -27,7 +27,7 @@
         <label class="flex flex-col">
             Image:
             <!-- <input type="text" name="image" class="rounded-md bg-gray-200 text-center"> -->
-             <input type="file" name="image[]" id="" class="rounded-md bg-gray-200" accept="image/*" size="10">
+             <input type="file" name="image[]" multiple id="" class="rounded-md bg-gray-200" accept="image/*" size="10">
         </label>
         <label class="flex flex-col">
             Manufacturer:

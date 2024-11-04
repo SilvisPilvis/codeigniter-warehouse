@@ -51,6 +51,10 @@ $routes->post('product/edit/(:num)', 'Product::saveEdit/$1');
 
 $routes->post('product/delete/(:num)', 'Product::delete/$1');
 
+$routes->post("/product/(:num)/images/delete", 'Product::deleteImages/$1');
+
+$routes->post("/product/(:num)/images/(:any)", 'Product::deleteSingleImage/$1/$2');
+
 // WarehouseProduct routes
 
 $routes->get('warehouse/(:num)/product', 'WarehouseProduct::index/$1');

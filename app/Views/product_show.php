@@ -12,7 +12,7 @@ function string2array($string){
     <title>Show products</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="flex flex-col items-center flex-wrap h-screen bg-gray-800">
+<body class="flex flex-col items-center h-screen bg-gray-800">
     <?php include('navbar.php'); ?>
 
     <?php if($products == null) : ?>
@@ -24,7 +24,7 @@ function string2array($string){
 
     <div class="flex flex-row flex-wrap gap-4 w-full box-border p-4">
         <?php foreach ($products as $product) : ?>
-            <a href="<?= base_url('product/' . $product['id']) ?>" class="black decoration-none rounded-md bg-teal-100 p-4">
+            <a href="<?= base_url('product/' . $product['id']) ?>" class="black decoration-none rounded-md bg-teal-100 p-4 min-h-[10rem] max-h-max">
                 <div class="flex flex-col items-center gap-2">
                     <p>Id: <?= $product['id'] ?></p>
                     <h1>Name: <?= $product['name'] ?></h1>
@@ -43,9 +43,12 @@ function string2array($string){
                                             <?php continue; ?>
                                         <?php else : ?>
                                             <img src="<?= $metadata ?>" alt="" id="test" class="min-w-26 min-h-26 max-w-52 max-h-52 rounded-md object-cover mx-auto m-2">
+                                            <?php continue; ?>
                                         <?php endif; ?>
                                     <?php endif; ?>
-                                    <input type="text" name="<?= $key ?>" readonly value="<?= $metadata ?>" class="rounded-md w-min text-center">
+                                    <?php if(gettype($metadata) != "array"): ?>
+                                        <input type="text" name="<?= $key ?>" readonly value="<?= $metadata ?>" class="rounded-md w-min text-center">
+                                    <?php endif; ?>
                                 </label>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -65,7 +68,7 @@ function string2array($string){
                 </div>
             </a>
         <?php endforeach; ?>
-        <a href="<?= base_url('product/create') ?>" class="bg-orange-300 rounded-md h-full flex justify-center items-center p-4">Create A Product</a>
+        <a href="<?= base_url('product/create') ?>" class="bg-orange-300 rounded-md h-full flex justify-center items-center p-4 h-max">Create A Product</a>
     </div>
 </body>
 </html>
