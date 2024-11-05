@@ -19,7 +19,7 @@ class CreateProductsTable extends Migration
                 'constraint' => '255',
             ],
             'metadata' => [
-                'type' => 'JSON',
+                'type' => 'JSONB',
                 'null' => true,
             ],
             // 'created_at timestamp default NOW()'

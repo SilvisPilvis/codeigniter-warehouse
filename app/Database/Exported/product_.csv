@@ -1,0 +1,7 @@
+id,name,metadata,created_at,updated_at
+13,realpath_test_product,"{""image"":""[\""uploads\\\/Screenshot_2024-10-24_11-06-33_1.png\"",\""uploads\\\/Screenshot_2024-10-24_11-02-34_1.png\""]"",""manufacturer"":""prod Manufacturer"",""weight"":""1Kg"",""size"":""1Cm\u00b3""}",2024-10-14 21:45:12,2024-11-04 11:23:25
+3,Cube,"{""image"":""https:\/\/www.drawingforall.net\/wp-content\/uploads\/2020\/07\/how-to-draw-a-cube-1.jpg"",""manufacturer"":""CubeManufacturer"",""weight"":""1Kg"",""size"":""3Cm\u00b3""}",2024-10-05 18:19:59,2024-10-05 18:19:59
+15,Multiple Test,"{""image"":""[\""uploads\\\/icon.png\""]"",""manufacturer"":""Multiple Manufacturer"",""weight"":""1Kg"",""size"":""1Cm\u00b3""}",2024-10-15 19:52:51,2024-10-15 21:41:25
+16,zhgdgfhk,"{""image"":""[\""uploads\\\/Office_-12_icon-icons.com_73956.png\"",\""uploads\\\/af29f77dc4fcf2c59e031b53be29aa0b_3.jpg\""]"",""manufacturer"":""zhgdgfhk"",""weight"":""1Kg"",""size"":""1Cm\u00b3""}",2024-10-15 21:46:14,2024-10-15 21:46:34
+2,TestProduct,"{""image"":""[\""uploads\\\/icon_4.png\""]"",""manufacturer"":""TestManufacturer"",""weight"":""1Kg"",""size"":""10Cm\u00b3""}",2024-10-05 17:48:36,2024-11-04 11:46:20
+14,prod_name,"{""image"":""[\""uploads\\\/af29f77dc4fcf2c59e031b53be29aa0b_21.jpg\""]"",""manufacturer"":""prod Manufacturer"",""weight"":""1Kg"",""size"":""1Cm\u00b3""}",2024-10-14 23:32:14,2024-10-26 22:30:29

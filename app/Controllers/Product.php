@@ -18,6 +18,8 @@ class Product extends BaseController
     {
         $productModel = new \App\Models\ProductModel();
         $data['product'] = $productModel->find($id);
+        // use this query
+        // select product.id, product.name, metadata->>'size' size, metadata->>'weight' weight, metadata->>'image' images, metadata->>'manufacturer' manufacturer, product.created_at from product;
         return view('product_show', $data);
     }
 
@@ -29,7 +31,26 @@ class Product extends BaseController
     public function showSingle(int $id)
     {
         $productModel = new \App\Models\ProductModel();
-        $data['products'] =  [$productModel->find($id)];
+        // $data['products'] =  [$productModel->find($id)];
+        // $data['products'] =  [$productModel->select('
+        // product.id, 
+        // product.name, 
+        // metadata->>"image" images, 
+        // metadata->>"manufacturer" manufacturer, 
+        // metadata->>"size" size, 
+        // metadata->>"weight" weight, 
+        // product.created_at')
+        // ->where('id', $id)
+        // ->first()];
+        $data['products'] =  [$productModel->query("SELECT product.id, 
+        product.name, 
+        metadata->>'image' as images, 
+        metadata->>'manufacturer' as manufacturer, 
+        metadata->>'size' as size, 
+        metadata->>'weight' as weight, 
+        product.created_at 
+        FROM product 
+        WHERE id = ?", [$id])->getRow()];
         return view('product_show', $data);   
     }
 
@@ -54,9 +75,11 @@ class Product extends BaseController
 
         switch ($data):
             case !str_contains($data['weight'], 'Kg'):
-                $data['weight'] = $data['weight'] . 'Kg';
+                // $data['weight'] = $data['weight'] . 'Kg';
+                $data['weight'] = $data['weight'];
             case !str_contains($data['size'], 'Cm³'):
-                $data['size'] = $data['size'] . 'Cm³';
+                // $data['size'] = $data['size'] . 'Cm³';
+                $data['size'] = $data['size'];
         endswitch;
 
         $rule = [
@@ -101,12 +124,14 @@ class Product extends BaseController
                 }
             }
         }
-        // print_r($productImages);
         
         $data['image'] = json_encode($productImages);
 
         $data['metadata'] = json_encode(array_slice($data, 1));
         $product->fill($data);
+
+        // use this query
+        // UPDATE product SET metadata = jsonb_set(metadata, '{manufacturer}', '"Sigma"') WHERE id = 1;
 
         if ($productModel->update($id, $data)) {
             return view('success_message', [
@@ -198,11 +223,14 @@ class Product extends BaseController
 
         // $errors = [];
 
+        // nevajag mervienibas
         switch ($data):
             case !str_contains($data['weight'], 'Kg'):
-                $data['weight'] = $data['weight'] . 'Kg';
+                // $data['weight'] = $data['weight'] . 'Kg';
+                $data['weight'] = $data['weight'];
             case !str_contains($data['size'], 'Cm³'):
-                $data['size'] = $data['size'] . 'Cm³';
+                // $data['size'] = $data['size'] . 'Cm³';
+                $data['size'] = $data['size'];
         endswitch;
 
         
