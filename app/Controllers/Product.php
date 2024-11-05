@@ -10,7 +10,6 @@ class Product extends BaseController
     public function index()
     {
         $productModel = new \App\Models\ProductModel();
-        // $data['products'] = $productModel->orderBy('updated_at desc')->findAll();
         $data['products'] = $productModel->query("SELECT product.id, 
         product.name, 
         metadata->>'image' as images, 
@@ -20,15 +19,6 @@ class Product extends BaseController
         product.created_at 
         FROM product 
         ORDER BY updated_at DESC;")->getResult();
-        return view('product_show', $data);
-    }
-
-    public function show(int $id)
-    {
-        $productModel = new \App\Models\ProductModel();
-        $data['product'] = $productModel->find($id);
-        // use this query
-        // select product.id, product.name, metadata->>'size' size, metadata->>'weight' weight, metadata->>'image' images, metadata->>'manufacturer' manufacturer, product.created_at from product;
         return view('product_show', $data);
     }
 
@@ -101,7 +91,7 @@ class Product extends BaseController
         $productImages = [];
         foreach ($images['image'] as $image) {
             if($image->isValid() && !$image->hasMoved()) {
-                // $newPath = $image->move(WRITEPATH . 'uploads', $image->getName());
+                $image->move(WRITEPATH . 'uploads', $image->getName());
                 $productImages[] = "uploads/".$image->getName();
             }
         }
@@ -145,38 +135,54 @@ class Product extends BaseController
     public function deleteImages(int $id)
     {
         $productModel = new \App\Models\ProductModel();
-        $existingProduct = $productModel->find($id);
-        $existingRawMetadata = $existingProduct["metadata"];
-        $existingMetadata = json_decode($existingRawMetadata, true);
 
-        foreach(json_decode($existingMetadata["image"]) as $image) {
-            // execute this if images failed to delete
-            $errors = ["Failed to delete image(s)."];
-            if (!unlink(WRITEPATH.$image)) {
-                return view('product_edit', $errors);
+        $existingPics = $productModel->query("SELECT 
+        metadata->>'image' as images
+        FROM product 
+        WHERE id = ?", [$id])->getRow();
+        $existingPics = json_decode($existingPics->images, true);
+
+        $errors = [];
+
+        if(count($existingPics) > 0){
+            foreach($existingPics as $pic) {
+                if (!unlink(WRITEPATH.$pic)) {
+                    return view('product_edit', $errors);
+                }
             }
         }
 
-        $existingMetadata["image"] = [];
-        $existingProduct["metadata"] = json_encode($existingMetadata);
-        $data['product'] = $existingProduct;
-        if ($productModel->update($id, $existingProduct)) {
+        $query = $productModel->query("UPDATE product SET metadata = jsonb_set(metadata, '{image}', '".json_encode([])."') WHERE id = ?", [$id]);
+
+        $data['product'] =  $productModel->query("SELECT product.id, 
+        product.name, 
+        metadata->>'image' as images, 
+        metadata->>'manufacturer' as manufacturer, 
+        metadata->>'size' as size, 
+        metadata->>'weight' as weight, 
+        product.created_at 
+        FROM product 
+        WHERE id = ?", [$id])->getRow();
+
+        if ($query) {
             return view('product_edit', $data);
         }
+
     }
 
     public function deleteSingleImage(int $id, string $name)
     {
         $productModel = new \App\Models\ProductModel();
-        $existingProduct = $productModel->find($id);
-        $existingRawMetadata = $existingProduct["metadata"];
-        $existingMetadata = json_decode($existingRawMetadata, true);
 
-        $images = json_decode($existingMetadata["image"], true);
+        $existingPics = $productModel->query("SELECT 
+        metadata->>'image' as images
+        FROM product 
+        WHERE id = ?", [$id])->getRow();
+        $existingPics = json_decode($existingPics->images, true);
 
-        for($x = 0; $x < count($images); $x++) {
-            if ($images[$x] == "uploads/".$name) {
-                unset($images[$x]);
+        for($x = 0; $x < count($existingPics); $x++) {
+            if ($existingPics[$x] == "uploads/".$name) {
+                unset($existingPics[$x]);
                 if (!unlink(WRITEPATH ."uploads/".$name)) {
                     $errors = ["Failed to delete image(s)."];
                     return view('product_edit', $errors);
@@ -184,15 +190,20 @@ class Product extends BaseController
                 break;
             }
         }
-  
-        $existingMetadata["image"] = json_encode($images);
 
-        $existingProduct["metadata"] = json_encode($existingMetadata);
-        
-        print_r($existingMetadata);
-        $data['product'] = $existingProduct;
+        $query = $productModel->query("UPDATE product SET metadata = jsonb_set(metadata, '{image}', '".json_encode($existingPics)."') WHERE id = ?", [$id]);
 
-        if ($productModel->update($id, $existingProduct)) {
+        $data['product'] =  $productModel->query("SELECT product.id, 
+        product.name, 
+        metadata->>'image' as images, 
+        metadata->>'manufacturer' as manufacturer, 
+        metadata->>'size' as size, 
+        metadata->>'weight' as weight, 
+        product.created_at 
+        FROM product 
+        WHERE id = ?", [$id])->getRow();
+
+        if ($query) {
             return view('product_edit', $data);
         }
     }
@@ -223,8 +234,6 @@ class Product extends BaseController
             'size' => $this->request->getPost('size'),
         ];
 
-        // $errors = [];
-
         $rule = [
             'name' => 'required|min_length[3]|max_length[255]',
             'image' => [
@@ -247,7 +256,6 @@ class Product extends BaseController
         $productImages = [];
         foreach ($images['image'] as $image) {
             if($image->isValid() && !$image->hasMoved()) {
-                // $newPath = $image->move(WRITEPATH . 'uploads', $image->getName());
                 $productImages[] = "uploads/".$image->getName();
             }
         }

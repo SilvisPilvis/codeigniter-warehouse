@@ -64,7 +64,6 @@
     }
 
     function removeFromPreview(id, input) {
-
         // delete input.files[id];
         const fileInput = document.querySelector('input[type="file"]');
         // Create a new FileList without the removed file
@@ -80,28 +79,13 @@
     }
 
     function removeImageFromDb(productId, productName) {
-        delete input.files[id];
-        $('#preview').remove(`#preview${id}`)
-        // send post req to /product/(:num)/images/(:str)
-        $.post(`http://localhost:8000/product/${productId}/images/${productName}`,
-        {
-            // name: "Donald Duck",
-            // city: "Duckburg"
-        },
-        function(data, status){
-            alert("Data: " + data + "\nStatus: " + status);
-        });
-    }
-
-    function removeImageFromDb(productId, productName) {
         if (confirm('Are you sure you want to delete this image?')) {
             $.ajax({
                 url: `${window.location.origin}/product/${productId}/images/${productName}`,
                 type: 'POST',
                 success: function(response) {
                     // Remove the parent div containing both the button and image
-                    // $(`img[src$="${productName}"]`).parent().remove();
-                    $('#preview').remove(`#preview${id}`)
+                    $(`img[src$="${productName}"]`).parent().remove();
                     alert('Image deleted successfully');
                 },
                 error: function(xhr, status, error) {
@@ -144,8 +128,19 @@
                 <input type="file" name="image[]" multiple onchange="readURL(this);" id="" class="rounded-md bg-gray-200" accept="image/*" size="10">
                 <div class="flex flex-row flex-wrap gap-4">
                     <div id="preview" class="h-max outline outline-2 outline-cyan-300 rounded-md w-fit p-2 mt-4"></div>
-                    <?php foreach (json_decode($product->images, true) as $image) : ?>
-                        <img src="<?= base_url($image) ?>" alt="" class="min-w-26 min-h-26 max-w-52 max-h-52 rounded-md object-cover mx-auto m-2">
+                    <?php foreach (json_decode($product->images, true) as $key => $image) : ?>
+                        <div class="relative inline-block" id="preview<?= $key ?>">
+                        <button 
+                            onclick="removeImageFromDb(<?= $product->id ?>, '<?= basename($image) ?>')" 
+                            class="absolute top-2 right-2 bg-red-500 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center z-10"
+                            type="button">
+                            ×
+                        </button>
+                        <img 
+                            src="<?= base_url($image) ?>" 
+                            alt="" 
+                            class="min-w-26 min-h-26 max-w-52 max-h-52 rounded-md object-cover mx-auto m-2">
+                        </div>
                     <?php endforeach; ?>
                 </div>
             </label>
