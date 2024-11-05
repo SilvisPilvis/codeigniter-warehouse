@@ -33,15 +33,15 @@ function string2array($string){
                     <?php endforeach; ?>
                     <label class="flex flex-col">
                         Manufacturer:
-                        <input type="datetime" name="date" readonly value="<?= $product->manufacturer ?>" class="rounded-md w-min text-center">
+                        <input type="text" name="date" readonly value="<?= $product->manufacturer ?>" class="rounded-md w-min text-center">
                     </label>
                     <label class="flex flex-col">
                         Volume in Cm³:
-                        <input type="datetime" name="date" readonly value="<?= $product->size ?>" class="rounded-md w-min text-center">
+                        <input type="text" min="0.01" max="100" step="0.01" name="size" readonly value="<?= $product->size ?>" class="rounded-md w-min text-center">
                     </label>
                     <label class="flex flex-col">
                         Weight in Kg:
-                        <input type="datetime" name="date" readonly value="<?= $product->weight ?>" class="rounded-md w-min text-center">
+                        <input type="text" name="date" readonly value="<?= $product->weight ?>" class="rounded-md w-min text-center">
                     </label>
                     <label class="flex flex-col">
                         Created at:

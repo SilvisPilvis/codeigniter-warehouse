@@ -10,7 +10,16 @@ class Product extends BaseController
     public function index()
     {
         $productModel = new \App\Models\ProductModel();
-        $data['products'] = $productModel->orderBy('updated_at desc')->findAll();
+        // $data['products'] = $productModel->orderBy('updated_at desc')->findAll();
+        $data['products'] = $productModel->query("SELECT product.id, 
+        product.name, 
+        metadata->>'image' as images, 
+        metadata->>'manufacturer' as manufacturer, 
+        metadata->>'size' as size, 
+        metadata->>'weight' as weight, 
+        product.created_at 
+        FROM product 
+        ORDER BY updated_at DESC;")->getResult();
         return view('product_show', $data);
     }
 
@@ -31,17 +40,6 @@ class Product extends BaseController
     public function showSingle(int $id)
     {
         $productModel = new \App\Models\ProductModel();
-        // $data['products'] =  [$productModel->find($id)];
-        // $data['products'] =  [$productModel->select('
-        // product.id, 
-        // product.name, 
-        // metadata->>"image" images, 
-        // metadata->>"manufacturer" manufacturer, 
-        // metadata->>"size" size, 
-        // metadata->>"weight" weight, 
-        // product.created_at')
-        // ->where('id', $id)
-        // ->first()];
         $data['products'] =  [$productModel->query("SELECT product.id, 
         product.name, 
         metadata->>'image' as images, 
@@ -57,7 +55,15 @@ class Product extends BaseController
     public function showEdit(int $id)
     {
         $productModel = new \App\Models\ProductModel();
-        $data['product'] = $productModel->find($id);
+        $data['product'] =  $productModel->query("SELECT product.id, 
+        product.name, 
+        metadata->>'image' as images, 
+        metadata->>'manufacturer' as manufacturer, 
+        metadata->>'size' as size, 
+        metadata->>'weight' as weight, 
+        product.created_at 
+        FROM product 
+        WHERE id = ?", [$id])->getRow();
         return view('product_edit', $data);
     }
 
@@ -73,24 +79,15 @@ class Product extends BaseController
             'size' => $this->request->getPost('size'),
         ];
 
-        switch ($data):
-            case !str_contains($data['weight'], 'Kg'):
-                // $data['weight'] = $data['weight'] . 'Kg';
-                $data['weight'] = $data['weight'];
-            case !str_contains($data['size'], 'Cm³'):
-                // $data['size'] = $data['size'] . 'Cm³';
-                $data['size'] = $data['size'];
-        endswitch;
-
         $rule = [
             'name' => 'required|min_length[3]|max_length[255]',
             'image' => [
                 'label' => 'Image',
-                'rules' => 'max_size[image,1024]|max_dims[image,1024,768]|mime_in[image,image/jpg,image/jpeg,image/png]',
+                'rules' => 'max_size[image,1024]|max_dims[image,1024,1024]|mime_in[image,image/jpg,image/jpeg,image/png]',
             ],
             'manufacturer' => 'required|min_length[3]|max_length[255]',
-            'weight' => 'required|numeric',
-            'size' => 'required|numeric',
+            'weight' => 'required|numeric|greater_than_equal_to[0.01]',
+            'size' => 'required|numeric|greater_than_equal_to[1]',
         ];
 
         if (!$this->validate($rule)) {
@@ -104,17 +101,22 @@ class Product extends BaseController
         $productImages = [];
         foreach ($images['image'] as $image) {
             if($image->isValid() && !$image->hasMoved()) {
-                $newPath = $image->move(WRITEPATH . 'uploads', $image->getName());
+                // $newPath = $image->move(WRITEPATH . 'uploads', $image->getName());
                 $productImages[] = "uploads/".$image->getName();
             }
         }
 
         // TEST add existing images from db
-        $existingMetadata = $productModel->find($id);
-        $existingPics = json_decode($existingMetadata["metadata"], true)["image"];
+
+        $existingPics = $productModel->query("SELECT 
+        metadata->>'image' as images
+        FROM product 
+        WHERE id = ?", [$id])->getRow();
+        $existingPics = json_decode($existingPics->images, true);
+
         if (gettype($existingPics) == 'array'){
             if(count($existingPics) > 0){
-                foreach(json_decode($existingPics) as $pic) {
+                foreach($existingPics as $pic) {
                     if(substr_count($pic, "uploads/") <= 0){
                         // break;
                         $productImages[] = "uploads/".$pic;
@@ -223,27 +225,15 @@ class Product extends BaseController
 
         // $errors = [];
 
-        // nevajag mervienibas
-        switch ($data):
-            case !str_contains($data['weight'], 'Kg'):
-                // $data['weight'] = $data['weight'] . 'Kg';
-                $data['weight'] = $data['weight'];
-            case !str_contains($data['size'], 'Cm³'):
-                // $data['size'] = $data['size'] . 'Cm³';
-                $data['size'] = $data['size'];
-        endswitch;
-
-        
-
         $rule = [
             'name' => 'required|min_length[3]|max_length[255]',
             'image' => [
                 'label' => 'Image',
-                'rules' => 'uploaded[image]|max_size[image,1024]|max_dims[image,1024,768]|mime_in[image,image/jpg,image/jpeg,image/png]',
+                'rules' => 'uploaded[image]|max_size[image,1024]|max_dims[image,1024,1024]|mime_in[image,image/jpg,image/jpeg,image/png]',
             ],
             'manufacturer' => 'required|min_length[3]|max_length[255]',
-            'weight' => 'required|numeric',
-            'size' => 'required|numeric',
+            'weight' => 'required|numeric|greater_than_equal_to[0.01]',
+            'size' => 'required|numeric|greater_than_equal_to[1]',
         ];
 
         if (!$this->validate($rule)) {
@@ -257,7 +247,7 @@ class Product extends BaseController
         $productImages = [];
         foreach ($images['image'] as $image) {
             if($image->isValid() && !$image->hasMoved()) {
-                $newPath = $image->move(WRITEPATH . 'uploads', $image->getName());
+                // $newPath = $image->move(WRITEPATH . 'uploads', $image->getName());
                 $productImages[] = "uploads/".$image->getName();
             }
         }

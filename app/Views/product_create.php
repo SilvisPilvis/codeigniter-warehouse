@@ -36,14 +36,14 @@
         <label class="flex flex-col">
             Weight:
             <div class="flex flex-row">
-                <input type="number" name="weight" class="rounded-md bg-gray-200 text-center">
+                <input type="number" min="0.01" max="100" step="0.01" name="weight" class="rounded-md bg-gray-200 text-center">
                 <p class="mx-2">Kg</p>
             </div>
         </label>
         <label class="flex flex-col">
             Size / Volume:
             <div class="flex flex-row">
-                <input type="number" name="size" class="rounded-md bg-gray-200 text-center">
+                <input type="number" min="1" max="10000" name="size" class="rounded-md bg-gray-200 text-center">
                 <p class="mx-2">Cm³</p>
             </div>
         </label>
