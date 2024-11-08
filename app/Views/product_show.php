@@ -57,7 +57,7 @@ function string2array($string)
             if (url.match(/&filter/)) {
                 let filtered = url.split("&filter")[0]+"&filter="+encodeURI(document.getElementById("filter").value)+"&criteriaMin="+encodeURI($(minVal).val())+"&criteriaMax="+encodeURI($(maxVal).val());
                 document.location = filtered;
-            }
+            }tagSearch
             if (!url.match(/&filter/)) {
                 //error here
                 let part = url.split("?")[1]+"&filter="+encodeURI(document.getElementById("filter").value)+"&criteriaMin="+encodeURI($(minVal).val())+"&criteriaMax="+encodeURI($(maxVal).val());
@@ -68,6 +68,40 @@ function string2array($string)
             //error here
             url = url.split("?")[0];
             let filtered = url+"?filter="+encodeURI(document.getElementById("filter").value)+"&criteriaMin="+encodeURI($(minVal).val())+"&criteriaMax="+encodeURI($(maxVal).val());
+            document.location = filtered;
+        }
+    }
+
+    let tags = [];
+
+    function searchTag(input) {
+        tags.push(input.value);
+        //console.log("searching tags:", input.value);
+        $("#searched-tags").val(tags.join("|"));
+        console.log($("#searched-tags").val());
+    }
+
+    function tagsSearch() {
+        // console.log("searching tags:", $("#tags-search").val());
+        let url = document.location.href;
+        // if order exists replace it if no order then append
+        if (url.match(/\?/)) {
+            // If a get parameter exists
+            // if order exists and is not 1st get param
+            if (url.match(/&tags/)) {
+                let filtered = url.split("&tags")[0]+"&tags="+encodeURI(tags.join("|"));
+                document.location = filtered;
+            }
+            // if 1st get param replace
+            if (!url.match(/&tags/)) {
+                let part = url.split("?")[1]+"&tags="+encodeURI(tags.join("|"));
+                let filtered = url.split("?")[0]+"?"+part;
+                document.location = filtered;
+            }
+        }else{
+            url = url.split("?")[0];
+            // If no get parameter
+            let filtered = url+"?tags="+encodeURI(tags.join("|"));
             document.location = filtered;
         }
     }
@@ -154,6 +188,13 @@ function string2array($string)
     <label class="flex flex-col text-white" id="filter-date">
         <input type="datetime" name="criteria" class="rounded-md">
         <button onclick="filter('#filter-date', '#filter-date')" class="bg-emerald-300 rounded-md p-2">Filter</button>
+    </label>
+
+    <label class="flex flex-col text-white gap-2">
+        Search:
+        <input type="text" class="rounded-md p-2 text-black" placeholder="Search tags..." onchange="searchTag(this)">
+        <input type="hidden" name="tags" id="tags-search" value="">
+        <button onclick="tagsSearch()" class="bg-emerald-300 rounded-md p-2">Search</button>
     </label>
 
     <script onload>

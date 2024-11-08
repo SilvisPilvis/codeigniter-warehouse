@@ -8,12 +8,13 @@ class Product extends BaseController
 
     public function index()
     {
-        $order = $this->request->getGet('order') ?? "name";
+        $order = $this->request->getGet('order') ?? "id";
         // ja ir range piemeram weight / size vai id tad $filter vajag but name un >
         // pimeram  $filter = "weight > " un $criteriaMin = "get value AND < $criteriaMax"
         $filter = $this->request->getGet('filter') ?? "id >";
         $criteriaMin = $this->request->getGet('criteriaMin') ?? "0";
         $criteriaMax = $this->request->getGet('criteriaMax') ?? "0";
+        $tags = $this->request->getGet('tags') ?? "";
 
         switch ($filter) {
             case "id":
@@ -36,7 +37,23 @@ class Product extends BaseController
                 break;
         }
 
-
+        //$tagSearch = "";
+        if ($tags) {
+            $filter = "";
+            foreach (explode("|", $tags) as $index => $tag) {
+                // if (count(explode("|", $tags)) === 0) {
+                //     $filter .= "(metadata->>'tags')::jsonb @> '\"" . $tag . "\"'::jsonb AND";
+                // } else {
+                //     $filter .= "(metadata->>'tags')::jsonb @> '\"" . $tag . "\"'::jsonb";
+                // }
+                if ($index === 0) {
+                    $filter = "(metadata->>'tags')::jsonb @> '\"" . $tag . "\"'::jsonb";  // Remove WHERE
+                } else {
+                    $filter .= " AND (metadata->>'tags')::jsonb @> '\"" . $tag . "\"'::jsonb";
+                }
+            }
+        }
+        //$filter = `(metadata->>'tags')::jsonb @> '[${filter}]'`;
 
         $productModel = new \App\Models\ProductModel();
         $data['products'] = $productModel
@@ -47,7 +64,7 @@ class Product extends BaseController
         metadata->>'manufacturer' as manufacturer,
         metadata->>'size' as size,
         metadata->>'weight' as weight,
-        product.created_at")
+        product.created_at ")
         ->where($filter, null, false)
         ->orderBy($order, 'ASC')
         ->get()
