@@ -106,11 +106,10 @@
         //dont allow numbers and if last char | then remove | and if | is typed then remove |
     }
 
-    function removeTagFromList(tag) {
-        // console.log($("#tags-hidden").val());
+    function removeTagFromList(tag, tagElement) {
+        tagElement.remove();
         tags = Array.from($("#tags-hidden").val().split("|"));
         tags = tags.filter(t => t !== tag);  // Assign the filtered result back to tags
-        // console.log(tags);
         $("#tags-hidden").val(tags.join("|"));
     }
 
@@ -152,7 +151,7 @@
                         <input type="text" list="tagList" placeholder="Add Tags" id="tags" class="rounded-md bg-gray-200 text-center" onchange="addTagToList(this)">
                         <input type="hidden" name="tags" id="tags-hidden" value="<?= implode('|', json_decode($product->tags)) ?>">
                         <?php foreach(json_decode($product->tags) as $tag) : ?>
-                            <p class="text-center text-white bg-indigo-900 px-2 rounded-md" onclick="removeTagFromList(this.innerText)"><?= $tag ?></p>
+                            <p class="text-center text-white bg-indigo-900 px-2 rounded-md" onclick="removeTagFromList(this.innerText, this)"><?= $tag ?></p>
                         <?php endforeach; ?>
                         <datalist id="tagList">
                             <?php foreach(json_decode($product->tags) as $tag) : ?>
