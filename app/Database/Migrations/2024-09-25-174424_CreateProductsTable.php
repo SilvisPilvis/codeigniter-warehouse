@@ -22,6 +22,10 @@ class CreateProductsTable extends Migration
                 'type' => 'JSONB',
                 'null' => true,
             ],
+            'tags' => [
+                'type' => 'JSONB',
+                'null' => true,
+            ],
             // 'created_at timestamp default NOW()'
             'created_at' => [
                 'type' => 'timestamp',

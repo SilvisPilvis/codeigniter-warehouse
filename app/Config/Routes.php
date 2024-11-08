@@ -37,7 +37,7 @@ $routes->post('warehouse/create', 'Warehouse::create');
 
 // Product routes
 
-$routes->get('product', 'Product::index');
+$routes->get('/product', 'Product::index');
 
 $routes->get('product/(:num)', 'Product::showSingle/$1');
 

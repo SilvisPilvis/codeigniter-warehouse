@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit a product</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link class="jsbin" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1/themes/base/jquery-ui.css" rel="stylesheet" type="text/css" />
-    <script class="jsbin" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
-    <script class="jsbin" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.0/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://code.jquery.com/ui/1.14.1/jquery-ui.min.js" integrity="sha256-AlTido85uXPlSyyaZNsjJXeCs07eSv3r43kyCVc8ChI=" crossorigin="anonymous"></script>
 </head>
 <body class="flex flex-col items-center h-screen w-screen bg-gray-800">
     <?php include('navbar.php'); ?>
@@ -95,6 +94,29 @@
             });
         }
     }
+
+    let tags = [];
+
+    //runs when you add a new tag
+    function addTagToList(input) {
+        //add tag to array
+        tags.push(input.value);
+        //set hidden input to all tags
+        $("#tags-hidden").val(tags.join("|"));
+        //dont allow numbers and if last char | then remove | and if | is typed then remove |
+    }
+
+    function removeTagFromList(tag) {
+        // console.log($("#tags-hidden").val());
+        tags = Array.from($("#tags-hidden").val().split("|"));
+        tags = tags.filter(t => t !== tag);  // Assign the filtered result back to tags
+        // console.log(tags);
+        $("#tags-hidden").val(tags.join("|"));
+    }
+
+    function submitTags() {
+        console.log($("#tags").val(tags.join("|")));
+    }
 </script>
 
     
@@ -122,6 +144,29 @@
             <label class="flex flex-col">
                 Product Name:
                 <input type="text" name="name" id="" value="<?= $product->name ?>" class="rounded-md bg-gray-200 text-center">
+            </label>
+            <label class="flex flex-col flex-wrap gap-4">
+                Tags:
+                <div class="flex flex-row flex-wrap gap-4">
+                    <?php if($product->tags) : ?>
+                        <input type="text" list="tagList" placeholder="Add Tags" id="tags" class="rounded-md bg-gray-200 text-center" onchange="addTagToList(this)">
+                        <input type="hidden" name="tags" id="tags-hidden" value="<?= implode('|', json_decode($product->tags)) ?>">
+                        <?php foreach(json_decode($product->tags) as $tag) : ?>
+                            <p class="text-center text-white bg-indigo-900 px-2 rounded-md" onclick="removeTagFromList(this.innerText)"><?= $tag ?></p>
+                        <?php endforeach; ?>
+                        <datalist id="tagList">
+                            <?php foreach(json_decode($product->tags) as $tag) : ?>
+                                <option value="<?= $tag ?>"><?= $tag ?></option>
+                            <?php endforeach; ?>
+                        </datalist>
+                    <?php else : ?>
+                    <p class="text-center text-gray-400">No Tags</p>
+                    <input type="text" list="tagList" placeholder="Add Tags" id="tags" class="rounded-md bg-gray-200 text-center" onchange="addTagToList(this)">
+                    <input type="hidden" name="tags" id="tags-hidden" value="">
+                    <datalist id="tagList">
+                    </datalist>
+                    <?php endif; ?>
+                </div>
             </label>
             <label class="flex flex-col">
                 Images:

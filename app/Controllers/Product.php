@@ -4,21 +4,58 @@ namespace App\Controllers;
 
 class Product extends BaseController
 {
-
     protected $helpers = ['form'];
 
     public function index()
     {
+        $order = $this->request->getGet('order') ?? "name";
+        // ja ir range piemeram weight / size vai id tad $filter vajag but name un >
+        // pimeram  $filter = "weight > " un $criteriaMin = "get value AND < $criteriaMax"
+        $filter = $this->request->getGet('filter') ?? "id >";
+        $criteriaMin = $this->request->getGet('criteriaMin') ?? "0";
+        $criteriaMax = $this->request->getGet('criteriaMax') ?? "0";
+
+        switch ($filter) {
+            case "id":
+                $filter = "id BETWEEN ".$criteriaMin." AND ".$criteriaMax;
+                break;
+            case "weight":
+                $filter = "metadata->>'weight' BETWEEN '".$criteriaMin."' AND '".$criteriaMax."'";
+                break;
+            case "size":
+                $filter = "metadata->>'size' BETWEEN '".$criteriaMin."' AND '".$criteriaMax."'";
+                break;
+            case "name":
+                $filter = $filter." = '".$criteriaMin."'";
+                break;
+            case "manufacturer":
+                $filter = "metadata->>'manufacturer' = "."'".$criteriaMin."'";
+                break;
+            default:
+                $filter = "id > 0";
+                break;
+        }
+
+
+
         $productModel = new \App\Models\ProductModel();
-        $data['products'] = $productModel->query("SELECT product.id, 
-        product.name, 
-        metadata->>'image' as images, 
-        metadata->>'manufacturer' as manufacturer, 
-        metadata->>'size' as size, 
-        metadata->>'weight' as weight, 
-        product.created_at 
-        FROM product 
-        ORDER BY updated_at DESC;")->getResult();
+        $data['products'] = $productModel
+        ->select("product.id,
+        product.name,
+        metadata->>'tags' as tags,
+        metadata->>'image' as images,
+        metadata->>'manufacturer' as manufacturer,
+        metadata->>'size' as size,
+        metadata->>'weight' as weight,
+        product.created_at")
+        ->where($filter, null, false)
+        ->orderBy($order, 'ASC')
+        ->get()
+        ->getResult();
+
+        $data['names'] = $productModel->select("id, name")->get()->getResult();
+        $data['manufacturers'] = $productModel->select("product.id, metadata->>'manufacturer' as name")->get()->getResult();
+
         return view('product_show', $data);
     }
 
@@ -31,28 +68,32 @@ class Product extends BaseController
     {
         $productModel = new \App\Models\ProductModel();
         $data['products'] =  [$productModel->query("SELECT product.id, 
-        product.name, 
-        metadata->>'image' as images, 
-        metadata->>'manufacturer' as manufacturer, 
-        metadata->>'size' as size, 
-        metadata->>'weight' as weight, 
-        product.created_at 
-        FROM product 
+        product.name,
+        metadata->>'tags' as tags,
+        metadata->>'image' as images,
+        metadata->>'manufacturer' as manufacturer,
+        metadata->>'size' as size,
+        metadata->>'weight' as weight,
+        product.created_at
+        FROM product
         WHERE id = ?", [$id])->getRow()];
-        return view('product_show', $data);   
+        $data['manufacturers'] = null;
+        $data['names'] = null;
+        return view('product_show', $data);
     }
 
     public function showEdit(int $id)
     {
         $productModel = new \App\Models\ProductModel();
         $data['product'] =  $productModel->query("SELECT product.id, 
-        product.name, 
-        metadata->>'image' as images, 
-        metadata->>'manufacturer' as manufacturer, 
-        metadata->>'size' as size, 
-        metadata->>'weight' as weight, 
-        product.created_at 
-        FROM product 
+        product.name,
+        metadata->>'image' as images,
+        metadata->>'manufacturer' as manufacturer,
+        metadata->>'size' as size,
+        metadata->>'weight' as weight,
+        metadata->>'tags' as tags,
+        product.created_at
+        FROM product
         WHERE id = ?", [$id])->getRow();
         return view('product_edit', $data);
     }
@@ -67,6 +108,7 @@ class Product extends BaseController
             'manufacturer' => $this->request->getPost('manufacturer'),
             'weight' => $this->request->getPost('weight'),
             'size' => $this->request->getPost('size'),
+            'tags' => $this->request->getPost('tags'),
         ];
 
         $rule = [
@@ -78,7 +120,11 @@ class Product extends BaseController
             'manufacturer' => 'required|min_length[3]|max_length[255]',
             'weight' => 'required|numeric|greater_than_equal_to[0.01]',
             'size' => 'required|numeric|greater_than_equal_to[1]',
+            'tags' => 'required|min_length[1]|max_length[255]',
         ];
+
+        $data['tags'] = json_encode(explode("|", $data['tags']));
+        //print_r($data['tags']);
 
         if (!$this->validate($rule)) {
             return view('product_edit', [
@@ -90,7 +136,7 @@ class Product extends BaseController
         $images = $this->request->getFiles();
         $productImages = [];
         foreach ($images['image'] as $image) {
-            if($image->isValid() && !$image->hasMoved()) {
+            if ($image->isValid() && !$image->hasMoved()) {
                 $image->move(WRITEPATH . 'uploads', $image->getName());
                 $productImages[] = "uploads/".$image->getName();
             }
@@ -98,25 +144,25 @@ class Product extends BaseController
 
         // TEST add existing images from db
 
-        $existingPics = $productModel->query("SELECT 
+        $existingPics = $productModel->query("SELECT
         metadata->>'image' as images
-        FROM product 
+        FROM product
         WHERE id = ?", [$id])->getRow();
         $existingPics = json_decode($existingPics->images, true);
 
-        if (gettype($existingPics) == 'array'){
-            if(count($existingPics) > 0){
-                foreach($existingPics as $pic) {
-                    if(substr_count($pic, "uploads/") <= 0){
+        if (gettype($existingPics) == 'array') {
+            if (count($existingPics) > 0) {
+                foreach ($existingPics as $pic) {
+                    if (substr_count($pic, "uploads/") <= 0) {
                         // break;
                         $productImages[] = "uploads/".$pic;
-                    }else{
+                    } else {
                         $productImages[] = $pic;
                     }
                 }
             }
         }
-        
+
         $data['image'] = json_encode($productImages);
 
         $data['metadata'] = json_encode(array_slice($data, 1));
@@ -138,14 +184,14 @@ class Product extends BaseController
 
         $existingPics = $productModel->query("SELECT 
         metadata->>'image' as images
-        FROM product 
+        FROM product
         WHERE id = ?", [$id])->getRow();
         $existingPics = json_decode($existingPics->images, true);
 
         $errors = [];
 
-        if(count($existingPics) > 0){
-            foreach($existingPics as $pic) {
+        if (count($existingPics) > 0) {
+            foreach ($existingPics as $pic) {
                 if (!unlink(WRITEPATH.$pic)) {
                     return view('product_edit', $errors);
                 }
@@ -155,13 +201,13 @@ class Product extends BaseController
         $query = $productModel->query("UPDATE product SET metadata = jsonb_set(metadata, '{image}', '".json_encode([])."') WHERE id = ?", [$id]);
 
         $data['product'] =  $productModel->query("SELECT product.id, 
-        product.name, 
-        metadata->>'image' as images, 
-        metadata->>'manufacturer' as manufacturer, 
-        metadata->>'size' as size, 
-        metadata->>'weight' as weight, 
-        product.created_at 
-        FROM product 
+        product.name,
+        metadata->>'image' as images,
+        metadata->>'manufacturer' as manufacturer,
+        metadata->>'size' as size,
+        metadata->>'weight' as weight,
+        product.created_at
+        FROM product
         WHERE id = ?", [$id])->getRow();
 
         if ($query) {
@@ -176,11 +222,11 @@ class Product extends BaseController
 
         $existingPics = $productModel->query("SELECT 
         metadata->>'image' as images
-        FROM product 
+        FROM product
         WHERE id = ?", [$id])->getRow();
         $existingPics = json_decode($existingPics->images, true);
 
-        for($x = 0; $x < count($existingPics); $x++) {
+        for ($x = 0; $x < count($existingPics); $x++) {
             if ($existingPics[$x] == "uploads/".$name) {
                 unset($existingPics[$x]);
                 if (!unlink(WRITEPATH ."uploads/".$name)) {
@@ -193,14 +239,15 @@ class Product extends BaseController
 
         $query = $productModel->query("UPDATE product SET metadata = jsonb_set(metadata, '{image}', '".json_encode($existingPics)."') WHERE id = ?", [$id]);
 
-        $data['product'] =  $productModel->query("SELECT product.id, 
-        product.name, 
-        metadata->>'image' as images, 
-        metadata->>'manufacturer' as manufacturer, 
-        metadata->>'size' as size, 
-        metadata->>'weight' as weight, 
-        product.created_at 
-        FROM product 
+        $data['product'] =  $productModel->query("SELECT product.id,
+        product.name,
+        metadata->>'tags' as tags,
+        metadata->>'image' as images,
+        metadata->>'manufacturer' as manufacturer,
+        metadata->>'size' as size,
+        metadata->>'weight' as weight,
+        product.created_at
+        FROM product
         WHERE id = ?", [$id])->getRow();
 
         if ($query) {
@@ -232,6 +279,7 @@ class Product extends BaseController
             'manufacturer' => $this->request->getPost('manufacturer'),
             'weight' => $this->request->getPost('weight'),
             'size' => $this->request->getPost('size'),
+            'tags' => $this->request->getPost('tags'),
         ];
 
         $rule = [
@@ -243,7 +291,9 @@ class Product extends BaseController
             'manufacturer' => 'required|min_length[3]|max_length[255]',
             'weight' => 'required|numeric|greater_than_equal_to[0.01]',
             'size' => 'required|numeric|greater_than_equal_to[1]',
+            'tags' => 'required|min_length[1]|max_length[255]',
         ];
+
 
         if (!$this->validate($rule)) {
             return view('product_create', [
@@ -251,11 +301,12 @@ class Product extends BaseController
             ]);
         }
 
-        
+        $data['tags'] = json_encode(explode("|", $data['tags']));
+
         $images = $this->request->getFiles();
         $productImages = [];
         foreach ($images['image'] as $image) {
-            if($image->isValid() && !$image->hasMoved()) {
+            if ($image->isValid() && !$image->hasMoved()) {
                 $productImages[] = "uploads/".$image->getName();
             }
         }
