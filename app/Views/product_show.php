@@ -74,9 +74,17 @@ function string2array($string)
 
     let tags = [];
 
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+
+    if (urlParams.has('tags')) {
+        tags = urlParams.get('tags').split("|");
+    }
+
+    // add clear tags
+
     function searchTag(input) {
         tags.push(input.value);
-        //console.log("searching tags:", input.value);
         $("#searched-tags").val(tags.join("|"));
         console.log($("#searched-tags").val());
     }
@@ -104,6 +112,34 @@ function string2array($string)
             let filtered = url+"?tags="+encodeURI(tags.join("|"));
             document.location = filtered;
         }
+    }
+
+    function addTagToList(input) {
+        let url = document.location.href;
+        // if contains remove tag
+        if (!tags.includes(input)) {
+            tags.push(input);
+        }else{
+            tags.splice(tags.indexOf(input), 1);
+        }
+
+        if (url.match(/\?/)) {
+            if (url.match(/&tags/)) {
+                let filtered = url.split("&tags")[0]+"&tags="+encodeURI(tags.join("|"));
+                document.location = filtered;
+            }
+            if (!url.match(/&tags/)) {
+                // let part = url.split("?tags")[1]+"?tags="+encodeURI(tags.join("|"));
+                let part = "?tags="+encodeURI(tags.join("|"));
+                let filtered = url.split("?")[0]+part;
+                document.location = filtered;
+            }
+        }else{
+            url = url.split("?")[0];
+            let filtered = url+"?tags="+encodeURI(tags.join("|"));
+            document.location = filtered;
+        }
+        // $("#searched-tags").val(tags.join("|"));
     }
     </script>
 
@@ -190,10 +226,21 @@ function string2array($string)
         <button onclick="filter('#filter-date', '#filter-date')" class="bg-emerald-300 rounded-md p-2">Filter</button>
     </label>
 
+    <div class="flex flex-row flex-wrap gap-2 mt-4" id="all-tags">
+        <?php foreach ($tags as $tag) : ?>
+            <p class="text-center text-white bg-indigo-900 px-2 rounded-md" onclick="addTagToList(this.innerText)"><?= $tag ?></p>
+        <?php endforeach; ?>
+    </div>
+
     <label class="flex flex-col text-white gap-2">
         Search:
-        <input type="text" class="rounded-md p-2 text-black" placeholder="Search tags..." onchange="searchTag(this)">
-        <input type="hidden" name="tags" id="tags-search" value="">
+        <input type="text" list="tags-search" class="rounded-md p-2 text-black" placeholder="Search tags..." onchange="searchTag(this)" value="<?= $_GET["tags"] ?? "" ?>">
+        <input type="hidden" id="searched-tags" name="tags" value="">
+        <datalist id="tags-search">
+            <?php foreach ($tags as $tag) : ?>
+                <option value="<?= $tag ?>"><?= $tag ?></option>
+            <?php endforeach; ?>
+        </datalist>
         <button onclick="tagsSearch()" class="bg-emerald-300 rounded-md p-2">Search</button>
     </label>
 
@@ -203,6 +250,15 @@ function string2array($string)
     $("#filter-str-manufacturer").hide("drop", { direction: "down" }, "slow");
     $('#filter-num-detailed').hide("drop", { direction: "down" }, "slow");
     $('#filter-date').hide("drop", { direction: "down" }, "slow");
+
+    // if tag text is in tags array change color to bg-emerald-300
+    $("#all-tags").children().each(function() {
+        // console.log("includes: "+ tags.includes($(this).text()));
+        if(tags.includes($(this).text())) {
+            $(this).removeClass("bg-indigo-900");
+            $(this).addClass("bg-lime-800");
+        }
+    });
     </script>
 
     <script>

@@ -19,6 +19,7 @@ $routes->get('test', 'Product::testSuccess');
 
 $routes->get('test/error', 'Product::testError');
 
+$routes->get("test/tags", 'Product::getAllTags');
 // Warehouse routes
 
 $routes->get('warehouse', 'Warehouse::index');

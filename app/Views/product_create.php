@@ -57,6 +57,18 @@
             </div>
         </label>
         <label class="flex flex-col">
+            Categories:
+            <?php if ($categories) : ?>
+                <select id="category" class="rounded-md bg-gray-200 text-center" oninput="addCategory()">
+                <option value="">None</option>
+                <?php foreach ($categories as $category) : ?>
+                    <option value="<?= $category->id ?>"><?= $category->name ?></option>
+                <?php endforeach; ?>
+                </select>
+            <?php endif; ?>
+            <input type="hidden" name="category_id" id="post-categories" value="" class="rounded-md bg-gray-200 text-center">
+        </label>
+        <label class="flex flex-col">
             Image:
             <!-- <input type="text" name="image" class="rounded-md bg-gray-200 text-center"> -->
              <input type="file" name="image[]" multiple id="" class="rounded-md bg-gray-200" accept="image/*" size="10">
@@ -81,5 +93,18 @@
         </label>
         <button type="submit" class="bg-emerald-300 rounded-md px-2">Create</button>
     </form>
+    <script>
+        let categories = [];
+        function addCategory() {
+            if (!categories.includes($("#category").val())) {
+                categories.push($("#category").val());
+                $("#post-categories").val(categories.join("|"));
+            }else {
+                categories.splice(categories.indexOf($("#category").val()), 1);
+                $("#post-categories").val(categories.join("|"));
+            }
+            console.log($("#post-categories").val());
+        }
+    </script>
 </body>
 </html>

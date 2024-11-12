@@ -144,6 +144,18 @@
                 Product Name:
                 <input type="text" name="name" id="" value="<?= $product->name ?>" class="rounded-md bg-gray-200 text-center">
             </label>
+            <label class="flex flex-col">
+                Categories:
+                <?php if ($categories) : ?>
+                <select id="category" class="rounded-md bg-gray-200 text-center" oninput="addCategory()">
+                <option value="">None</option>
+                <?php foreach ($categories as $category) : ?>
+                    <option value="<?= $category->id ?>"><?= $category->name ?></option>
+                <?php endforeach; ?>
+                </select>
+                <?php endif; ?>
+                <input type="hidden" name="category_id" id="post-categories" value="" class="rounded-md bg-gray-200 text-center">
+            </label>
             <label class="flex flex-col flex-wrap gap-4">
                 Tags:
                 <div class="flex flex-row flex-wrap gap-4">
@@ -207,5 +219,18 @@
             <button class="bg-emerald-300 rounded-md flex justify-center items-center m-2">Save Changes</button>
         </form>
         <?php endif; ?>
+        <script>
+        let categories = [];
+        function addCategory() {
+            if (!categories.includes($("#category").val())) {
+                categories.push($("#category").val());
+                $("#post-categories").val(categories.join("|"));
+            }else {
+                categories.splice(categories.indexOf($("#category").val()), 1);
+                $("#post-categories").val(categories.join("|"));
+            }
+            console.log($("#post-categories").val());
+        }
+        </script>
 </body>
 </html>

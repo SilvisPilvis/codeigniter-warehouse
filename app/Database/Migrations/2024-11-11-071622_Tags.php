@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateProductsTable extends Migration
+class Category extends Migration
 {
     public function up()
     {
@@ -16,16 +16,7 @@ class CreateProductsTable extends Migration
             ],
             'name' => [
                 'type'       => 'VARCHAR',
-                'constraint' => '255',
-            ],
-            'metadata' => [
-                'type' => 'JSONB',
-                'null' => true,
-            ],
-            'category_id' => [
-                'type'           => 'INT',
-                'unsigned'       => true,
-                'auto_increment' => true,
+                'constraint' => '100',
             ],
             'created_at' => [
                 'type' => 'timestamp',
@@ -38,17 +29,12 @@ class CreateProductsTable extends Migration
                 'default' => 'NOW()',
             ],
         ]);
-        $this->forge->addPrimaryKey('id');
-        $this->forge->addForeignKey('category_id', 'category', 'id');
-        $this->forge->createTable('product');
-        $this->db->insert('category', [
-            'name' => 'Box',
-            'name' => 'Stuff',
-        ]);
+        $this->forge->addPrimaryKey("id");
+        $this->forge->createTable("category");
     }
 
     public function down()
     {
-        $this->forge->dropTable('product');
+        $this->forge->dropTable("tag");
     }
 }

@@ -9,8 +9,6 @@ class Product extends BaseController
     public function index()
     {
         $order = $this->request->getGet('order') ?? "id";
-        // ja ir range piemeram weight / size vai id tad $filter vajag but name un >
-        // pimeram  $filter = "weight > " un $criteriaMin = "get value AND < $criteriaMax"
         $filter = $this->request->getGet('filter') ?? "id >";
         $criteriaMin = $this->request->getGet('criteriaMin') ?? "0";
         $criteriaMax = $this->request->getGet('criteriaMax') ?? "0";
@@ -37,19 +35,15 @@ class Product extends BaseController
                 break;
         }
 
-        //$tagSearch = "";
         if ($tags) {
             $filter = "";
             foreach (explode("|", $tags) as $index => $tag) {
-                // if (count(explode("|", $tags)) === 0) {
-                //     $filter .= "(metadata->>'tags')::jsonb @> '\"" . $tag . "\"'::jsonb AND";
-                // } else {
-                //     $filter .= "(metadata->>'tags')::jsonb @> '\"" . $tag . "\"'::jsonb";
-                // }
                 if ($index === 0) {
-                    $filter = "(metadata->>'tags')::jsonb @> '\"" . $tag . "\"'::jsonb";  // Remove WHERE
+                    $filter = "(product.*::text ILIKE '%" . $tag . "%' OR " .
+                              "metadata::text ILIKE '%" . $tag . "%')"; // Remove WHERE
                 } else {
-                    $filter .= " AND (metadata->>'tags')::jsonb @> '\"" . $tag . "\"'::jsonb";
+                    $filter .= " AND (product.*::text ILIKE '%" . $tag . "%' OR " .
+                               "metadata::text ILIKE '%" . $tag . "%')";
                 }
             }
         }
@@ -72,13 +66,40 @@ class Product extends BaseController
 
         $data['names'] = $productModel->select("id, name")->get()->getResult();
         $data['manufacturers'] = $productModel->select("product.id, metadata->>'manufacturer' as name")->get()->getResult();
+        $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category;")->getResult();
+
+        // --- all tags
+        $productTags = $productModel->select("metadata->>'tags' as tags")->get()->getResult();
+        $allTags = [];
+        foreach ($productTags as $tag) {
+            foreach (json_decode($tag->tags) as $test) {
+                array_push($allTags, $test);
+            }
+        }
+        $data['tags'] = $allTags;
+        // --- end all tags
 
         return view('product_show', $data);
     }
 
+    public function getAllTags()
+    {
+        $productModel = new \App\Models\ProductModel();
+        $tags = $productModel->select("metadata->>'tags' as tags")->get()->getResult();
+        $allTags = [];
+        foreach ($tags as $tag) {
+            foreach (json_decode($tag->tags) as $test) {
+                array_push($allTags, $test);
+            }
+        }
+        print_r($allTags);
+    }
+
     public function showCreate()
     {
-        return view('product_create');
+        $productModel = new \App\Models\ProductModel();
+        $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
+        return view('product_create', $data);
     }
 
     public function showSingle(int $id)
@@ -96,6 +117,19 @@ class Product extends BaseController
         WHERE id = ?", [$id])->getRow()];
         $data['manufacturers'] = null;
         $data['names'] = null;
+
+        // --- all tags
+        $productTags = $productModel->select("metadata->>'tags' as tags")->get()->getResult();
+        $allTags = [];
+        foreach ($productTags as $tag) {
+            foreach (json_decode($tag->tags) as $test) {
+                array_push($allTags, $test);
+            }
+        }
+        $data['tags'] = $allTags;
+        $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->get()->getResult();
+        // --- end all tags
+
         return view('product_show', $data);
     }
 
@@ -112,6 +146,7 @@ class Product extends BaseController
         product.created_at
         FROM product
         WHERE id = ?", [$id])->getRow();
+        $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
         return view('product_edit', $data);
     }
 
@@ -126,6 +161,7 @@ class Product extends BaseController
             'weight' => $this->request->getPost('weight'),
             'size' => $this->request->getPost('size'),
             'tags' => $this->request->getPost('tags'),
+            'category_id' => $this->request->getPost('category'),
         ];
 
         $rule = [
@@ -138,9 +174,11 @@ class Product extends BaseController
             'weight' => 'required|numeric|greater_than_equal_to[0.01]',
             'size' => 'required|numeric|greater_than_equal_to[1]',
             'tags' => 'required|min_length[1]|max_length[255]',
+            'category_id' => 'required|min_length[1]|max_length[255]',
         ];
 
         $data['tags'] = json_encode(explode("|", $data['tags']));
+        $data['category_id'] = json_encode(explode("|", $data['category_id']));
         //print_r($data['tags']);
 
         if (!$this->validate($rule)) {
@@ -297,6 +335,8 @@ class Product extends BaseController
             'weight' => $this->request->getPost('weight'),
             'size' => $this->request->getPost('size'),
             'tags' => $this->request->getPost('tags'),
+            'category_id' => $this->request->getPost('category'),
+            
         ];
 
         $rule = [
@@ -309,16 +349,20 @@ class Product extends BaseController
             'weight' => 'required|numeric|greater_than_equal_to[0.01]',
             'size' => 'required|numeric|greater_than_equal_to[1]',
             'tags' => 'required|min_length[1]|max_length[255]',
+            'category_id' => 'required|min_length[1]|max_length[255]',
         ];
 
+        $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
 
         if (!$this->validate($rule)) {
             return view('product_create', [
                 'errors' => $this->validator->getErrors(),
+                'categories' => $data['categories']
             ]);
         }
 
         $data['tags'] = json_encode(explode("|", $data['tags']));
+        $data['category_id'] = json_encode(explode("|", $data['category_id']));
 
         $images = $this->request->getFiles();
         $productImages = [];
