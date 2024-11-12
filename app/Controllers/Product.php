@@ -130,7 +130,7 @@ class Product extends BaseController
         FROM product
         WHERE id = ?", [$id])->getRow()];
         $data['manufacturers'] = null;
-        $data['names'] = null;
+        //$data['names'] = null;
 
         // --- all tags
         $productTags = $productModel->select("metadata->>'tags' as tags")->get()->getResult();
@@ -351,7 +351,7 @@ class Product extends BaseController
             'size' => $this->request->getPost('size'),
             'tags' => $this->request->getPost('tags'),
             'category_id' => $this->request->getPost('category_id'),
-            
+
         ];
 
         $rule = [
