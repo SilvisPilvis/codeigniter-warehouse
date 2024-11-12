@@ -13,6 +13,7 @@ class Product extends BaseController
         $criteriaMin = $this->request->getGet('criteriaMin') ?? "0";
         $criteriaMax = $this->request->getGet('criteriaMax') ?? "0";
         $tags = $this->request->getGet('tags') ?? "";
+        $categories = $this->request->getGet('category') ?? "";
 
         switch ($filter) {
             case "id":
@@ -40,13 +41,25 @@ class Product extends BaseController
             foreach (explode("|", $tags) as $index => $tag) {
                 if ($index === 0) {
                     $filter = "(product.*::text ILIKE '%" . $tag . "%' OR " .
-                              "metadata::text ILIKE '%" . $tag . "%')"; // Remove WHERE
+                        "metadata::text ILIKE '%" . $tag . "%')"; // Remove WHERE
                 } else {
                     $filter .= " AND (product.*::text ILIKE '%" . $tag . "%' OR " .
-                               "metadata::text ILIKE '%" . $tag . "%')";
+                        "metadata::text ILIKE '%" . $tag . "%')";
                 }
             }
         }
+
+        // Add category search
+        if ($categories) {  // Assuming $category_id is passed to the function
+            if ($filter) {
+                $filter .= " AND ";
+            }
+            // $filter .= `category_id @> '["`.$categories.`"]'::jsonb`;  // Checks if category_id array contains the value
+            $filter .= "category_id::text LIKE '%".$categories."%'";
+        }
+
+        // echo $filter;
+
         //$filter = `(metadata->>'tags')::jsonb @> '[${filter}]'`;
 
         $productModel = new \App\Models\ProductModel();
@@ -58,7 +71,8 @@ class Product extends BaseController
         metadata->>'manufacturer' as manufacturer,
         metadata->>'size' as size,
         metadata->>'weight' as weight,
-        product.created_at ")
+        product.created_at,
+        product.category_id ")
         ->where($filter, null, false)
         ->orderBy($order, 'ASC')
         ->get()
@@ -161,7 +175,7 @@ class Product extends BaseController
             'weight' => $this->request->getPost('weight'),
             'size' => $this->request->getPost('size'),
             'tags' => $this->request->getPost('tags'),
-            'category_id' => $this->request->getPost('category'),
+            'category_id' => $this->request->getPost('category_id'),
         ];
 
         $rule = [
@@ -177,9 +191,10 @@ class Product extends BaseController
             'category_id' => 'required|min_length[1]|max_length[255]',
         ];
 
+        // echo print_r($data['category_id']);
+
         $data['tags'] = json_encode(explode("|", $data['tags']));
         $data['category_id'] = json_encode(explode("|", $data['category_id']));
-        //print_r($data['tags']);
 
         if (!$this->validate($rule)) {
             return view('product_edit', [
@@ -335,7 +350,7 @@ class Product extends BaseController
             'weight' => $this->request->getPost('weight'),
             'size' => $this->request->getPost('size'),
             'tags' => $this->request->getPost('tags'),
-            'category_id' => $this->request->getPost('category'),
+            'category_id' => $this->request->getPost('category_id'),
             
         ];
 

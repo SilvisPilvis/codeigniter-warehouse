@@ -234,7 +234,7 @@ function string2array($string)
 
     <label class="flex flex-col text-white gap-2">
         Search:
-        <input type="text" list="tags-search" class="rounded-md p-2 text-black" placeholder="Search tags..." onchange="searchTag(this)" value="<?= $_GET["tags"] ?? "" ?>">
+        <input type="text" list="tags-search" class="rounded-md p-2 text-black" placeholder="Search products..." onchange="searchTag(this)" value="<?= $_GET["tags"] ?? "" ?>">
         <input type="hidden" id="searched-tags" name="tags" value="">
         <datalist id="tags-search">
             <?php foreach ($tags as $tag) : ?>
@@ -242,6 +242,18 @@ function string2array($string)
             <?php endforeach; ?>
         </datalist>
         <button onclick="tagsSearch()" class="bg-emerald-300 rounded-md p-2">Search</button>
+    </label>
+
+    <label class="flex flex-col text-white gap-2">
+        Category:
+        <?php if ($categories) : ?>
+            <select id="category" class="rounded-md p-2 m-2 text-black" oninput="searchCategory()">
+            <option value="">None</option>
+            <?php foreach ($categories as $category) : ?>
+                <option value="<?= $category->id ?>"><?= $category->name ?></option>
+            <?php endforeach; ?>
+            </select>
+        <?php endif; ?>
     </label>
 
     <script onload>
@@ -312,6 +324,26 @@ function string2array($string)
     function changeVal(val, e) {
         $(val).text($(e).val());
     }
+
+    function searchCategory() {
+        let category = $('#category').val();
+        let url = document.location.href;
+        if (url.match(/\?/)) {
+            if (url.match(/&category/)) {
+                let filtered = url.split("&category")[0]+"&category="+category;
+                document.location = filtered;
+            }
+            if (!url.match(/&category/)) {
+                let part = url.split("?")[1]+"&category="+category;
+                let filtered = url.split("?")[0]+"?"+part;
+                document.location = filtered;
+            }
+        }else{
+            url = url.split("?")[0];
+            let filtered = url+"?category="+category;
+            document.location = filtered;
+        }
+    }
     </script>
 
     <div class="flex flex-row flex-wrap gap-4 w-full box-border p-4">
@@ -336,6 +368,19 @@ function string2array($string)
                         <?php endif; ?>
                     </div>
                     <!-- tags -->
+                    <!-- categories -->
+                    Categories:
+                    <div class="flex flex-row gap-4">
+                        <?php if ($product->category_id) : ?>
+                            <?php foreach(json_decode($product->category_id) as $category) : ?>
+                                <?php $test = array_column($categories, 'name', 'id'); ?>
+                            <p class="text-center text-white bg-indigo-900 px-2 rounded-md"><?php echo $test[$category] ?></p>
+                            <?php endforeach; ?>
+                        <?php else : ?>
+                        <p class="text-center text-gray-400">No Categories</p>
+                        <?php endif; ?>
+                    </div>
+                    <!-- categories end -->
                     <label class="flex flex-col">
                         Manufacturer:
                         <input type="text" name="date" readonly value="<?= $product->manufacturer ?>" class="rounded-md w-min text-center">
