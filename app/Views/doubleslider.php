@@ -1,7 +1,8 @@
 <label class="flex flex-col text-black" id="filter-num">
    <p class="font-medium">Filter Id:</p>
-   <div class="relative mt-4">
-       <div class="flex justify-between mb-4">
+   <div class="relative mt-4 m-4">
+       <!-- <div class="flex justify-between mb-4"> -->
+       <div class="flex flex-row justify-between mb-4">
            <div class="flex items-center">
                <p class="text-sm text-gray-600">Min:</p>
                <input type="number" id="min-value" class="w-20 px-2 py-1 border rounded text-black" value="0" min="0" max="100">
