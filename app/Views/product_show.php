@@ -193,7 +193,8 @@ function string2array($string)
             </label>
 
             <label class="flex flex-col text-black w-full" id="filter-num-detailed">
-                <p>Filter Size:</p>
+                <?php include_once "detailed-slider.php"; ?>
+                <!-- <p>Filter Size:</p>
                 <p>Min:</p>
                 <div class="flex flex-row gap-2">
                     <input type="range" min="0" max="1000" step="0.01" value="0.1" id="criteria-min" oninput="changeVal('#criteria-min-val', this)">
@@ -203,7 +204,7 @@ function string2array($string)
                 <div class="flex flex-row gap-2">
                     <input type="range" min="0" max="10000" step="0.01" value="1000" id="criteria-max" oninput="changeVal('#criteria-max-val', this)">
                     <p id="criteria-max-val" class="text-white">10</p>
-                </div>
+                </div> -->
                 <!-- <button onclick="filter('#criteria-min-val', '#criteria-max-val')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
 

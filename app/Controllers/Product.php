@@ -36,29 +36,46 @@ class Product extends BaseController
                 break;
         }
 
+        // if ($tags) {
+        //     $filter = "";
+        //     foreach (explode("|", $tags) as $index => $tag) {
+        //         if ($index === 0) {
+        //             $filter = "(product.*::text ILIKE '%" . $tag . "%' OR " .
+        //                 "metadata::text ILIKE '%" . $tag . "%')"; // Remove WHERE
+        //         } else {
+        //             $filter .= " AND (product.*::text ILIKE '%" . $tag . "%' OR " .
+        //                 "metadata::text ILIKE '%" . $tag . "%')";
+        //         }
+        //     }
+        // }
+
+        // // Add category search
+        // if ($categories) {  // Assuming $category_id is passed to the function
+        //     if ($filter) {
+        //         $filter .= " AND ";
+        //     }
+        //     // $filter .= `category_id @> '["`.$categories.`"]'::jsonb`;  // Checks if category_id array contains the value
+        //     $filter .= "category_id::text LIKE '%".$categories."%'";
+        // }
+
         if ($tags) {
             $filter = "";
             foreach (explode("|", $tags) as $index => $tag) {
                 if ($index === 0) {
-                    $filter = "(product.*::text ILIKE '%" . $tag . "%' OR " .
-                        "metadata::text ILIKE '%" . $tag . "%')"; // Remove WHERE
+                    $filter = "(metadata->>'tags')::jsonb @> '[\"" . $tag . "\"]'";
                 } else {
-                    $filter .= " AND (product.*::text ILIKE '%" . $tag . "%' OR " .
-                        "metadata::text ILIKE '%" . $tag . "%')";
+                    $filter .= " AND (metadata->>'tags')::jsonb @> '[\"" . $tag . "\"]'";
                 }
             }
         }
 
         // Add category search
-        if ($categories) {  // Assuming $category_id is passed to the function
+        if ($categories) {
             if ($filter) {
                 $filter .= " AND ";
             }
-            // $filter .= `category_id @> '["`.$categories.`"]'::jsonb`;  // Checks if category_id array contains the value
-            $filter .= "category_id::text LIKE '%".$categories."%'";
+            $filter .= "category_id::text LIKE '%" . $categories . "%'";
         }
-
-        // echo $filter;
 
         //$filter = `(metadata->>'tags')::jsonb @> '[${filter}]'`;
 
@@ -126,6 +143,7 @@ class Product extends BaseController
         metadata->>'manufacturer' as manufacturer,
         metadata->>'size' as size,
         metadata->>'weight' as weight,
+        product.category_id,
         product.created_at
         FROM product
         WHERE id = ?", [$id])->getRow()];
@@ -141,7 +159,8 @@ class Product extends BaseController
             }
         }
         $data['tags'] = $allTags;
-        $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->get()->getResult();
+        $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
+        $data['names'] = $productModel->select("id, name")->get()->getResult();
         // --- end all tags
 
         return view('product_show', $data);
@@ -176,76 +195,82 @@ class Product extends BaseController
             'size' => $this->request->getPost('size'),
             'tags' => $this->request->getPost('tags'),
             'category_id' => $this->request->getPost('category_id'),
+            'test' => $this->request->getPost('test'),
         ];
 
-        $rule = [
-            'name' => 'required|min_length[3]|max_length[255]',
-            'image' => [
-                'label' => 'Image',
-                'rules' => 'max_size[image,1024]|max_dims[image,1024,1024]|mime_in[image,image/jpg,image/jpeg,image/png]',
-            ],
-            'manufacturer' => 'required|min_length[3]|max_length[255]',
-            'weight' => 'required|numeric|greater_than_equal_to[0.01]',
-            'size' => 'required|numeric|greater_than_equal_to[1]',
-            'tags' => 'required|min_length[1]|max_length[255]',
-            'category_id' => 'required|min_length[1]|max_length[255]',
-        ];
+        // get post data except all predefined inputs
+        $productModel->query("INSERT INTO category_template (template) VALUES(?)", array(json_encode(array_slice($_POST, 8, count($_POST) - 8))));
+        // echo json_encode(array_slice($_POST, 8, count($_POST) - 8));
+        // save the array to db category_id => array(input_name, value)
 
-        // echo print_r($data['category_id']);
+        // $rule = [
+        //     'name' => 'required|min_length[3]|max_length[255]',
+        //     'image' => [
+        //         'label' => 'Image',
+        //         'rules' => 'max_size[image,1024]|max_dims[image,1024,1024]|mime_in[image,image/jpg,image/jpeg,image/png]',
+        //     ],
+        //     'manufacturer' => 'required|min_length[3]|max_length[255]',
+        //     'weight' => 'required|numeric|greater_than_equal_to[0.01]',
+        //     'size' => 'required|numeric|greater_than_equal_to[1]',
+        //     'tags' => 'required|min_length[1]|max_length[255]',
+        //     'category_id' => 'required|min_length[1]|max_length[255]',
+        // ];
 
-        $data['tags'] = json_encode(explode("|", $data['tags']));
-        $data['category_id'] = json_encode(explode("|", $data['category_id']));
+        // // echo print_r($data['category_id']);
 
-        if (!$this->validate($rule)) {
-            return view('product_edit', [
-                'errors' => $this->validator->getErrors(),
-                'product' => $productModel->find($id),
-            ]);
-        }
+        // $data['tags'] = json_encode(explode("|", $data['tags']));
+        // $data['category_id'] = json_encode(explode("|", $data['category_id']));
 
-        $images = $this->request->getFiles();
-        $productImages = [];
-        foreach ($images['image'] as $image) {
-            if ($image->isValid() && !$image->hasMoved()) {
-                $image->move(WRITEPATH . 'uploads', $image->getName());
-                $productImages[] = "uploads/".$image->getName();
-            }
-        }
+        // if (!$this->validate($rule)) {
+        //     return view('product_edit', [
+        //         'errors' => $this->validator->getErrors(),
+        //         'product' => $productModel->find($id),
+        //     ]);
+        // }
 
-        // TEST add existing images from db
+        // $images = $this->request->getFiles();
+        // $productImages = [];
+        // foreach ($images['image'] as $image) {
+        //     if ($image->isValid() && !$image->hasMoved()) {
+        //         $image->move(WRITEPATH . 'uploads', $image->getName());
+        //         $productImages[] = "uploads/".$image->getName();
+        //     }
+        // }
 
-        $existingPics = $productModel->query("SELECT
-        metadata->>'image' as images
-        FROM product
-        WHERE id = ?", [$id])->getRow();
-        $existingPics = json_decode($existingPics->images, true);
+        // // TEST add existing images from db
 
-        if (gettype($existingPics) == 'array') {
-            if (count($existingPics) > 0) {
-                foreach ($existingPics as $pic) {
-                    if (substr_count($pic, "uploads/") <= 0) {
-                        // break;
-                        $productImages[] = "uploads/".$pic;
-                    } else {
-                        $productImages[] = $pic;
-                    }
-                }
-            }
-        }
+        // $existingPics = $productModel->query("SELECT
+        // metadata->>'image' as images
+        // FROM product
+        // WHERE id = ?", [$id])->getRow();
+        // $existingPics = json_decode($existingPics->images, true);
 
-        $data['image'] = json_encode($productImages);
+        // if (gettype($existingPics) == 'array') {
+        //     if (count($existingPics) > 0) {
+        //         foreach ($existingPics as $pic) {
+        //             if (substr_count($pic, "uploads/") <= 0) {
+        //                 // break;
+        //                 $productImages[] = "uploads/".$pic;
+        //             } else {
+        //                 $productImages[] = $pic;
+        //             }
+        //         }
+        //     }
+        // }
 
-        $data['metadata'] = json_encode(array_slice($data, 1));
-        $product->fill($data);
+        // $data['image'] = json_encode($productImages);
 
-        // use this query
-        // UPDATE product SET metadata = jsonb_set(metadata, '{manufacturer}', '"Sigma"') WHERE id = 1;
+        // $data['metadata'] = json_encode(array_slice($data, 1));
+        // $product->fill($data);
 
-        if ($productModel->update($id, $data)) {
-            return view('success_message', [
-                'message' => 'product ' . $product->name . ' has been updated'
-            ]);
-        }
+        // // use this query
+        // // UPDATE product SET metadata = jsonb_set(metadata, '{manufacturer}', '"Sigma"') WHERE id = 1;
+
+        // if ($productModel->update($id, $data)) {
+        //     return view('success_message', [
+        //         'message' => 'product ' . $product->name . ' has been updated'
+        //     ]);
+        // }
     }
 
     public function deleteImages(int $id)

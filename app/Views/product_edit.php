@@ -116,6 +116,17 @@
     function submitTags() {
         console.log($("#tags").val(tags.join("|")));
     }
+
+    function addField() {
+        console.log("Adding field");
+        let name = prompt("Enter field name");
+        $("#form").append(`
+            <label class="flex flex-col my-6">
+                ${name}:
+                <input type="text" class="rounded-md bg-gray-200 text-center" name="${name}">
+            </label>
+        `);
+    }
 </script>
 
     
@@ -133,9 +144,9 @@
         <?php endif; ?>
     <?php else : ?>
         <form action="<?= base_url('product/' . $product->id.'/images/delete') ?>" method="post">
-            <button class="bg-red-300 rounded-md flex justify-center items-center m-2">Delete Images</button>
+            <button class="bg-red-300 rounded-md flex justify-center items-center m-2 p-2">Delete Images</button>
         </form>
-        <form action="<?= base_url('product/edit/' . $product->id) ?>" enctype="multipart/form-data" method="post" class="flex flex-col gap-4 bg-teal-100 p-4 rounded-md my-auto">
+        <form action="<?= base_url('product/edit/' . $product->id) ?>" enctype="multipart/form-data" method="post" id="form" class="flex flex-col gap-4 bg-teal-100 p-4 rounded-md my-auto">
             <label class="flex flex-col">
                 Product Id:
                 <input type="number" name="id" id="" value="<?= $product->id ?>" readonly class="rounded-md bg-gray-200 text-center">
@@ -216,7 +227,8 @@
                 Created at:
                 <input type="datetime" name="date" readonly value="<?= $product->created_at ?>" class="rounded-md bg-gray-200 text-center">
             </label>
-            <button class="bg-emerald-300 rounded-md flex justify-center items-center m-2">Save Changes</button>
+            <div class="bg-emerald-300 rounded-md flex justify-center items-center m-2" onclick="addField()">Add Field</div>
+            <input type="submit" class="bg-emerald-300 rounded-md flex justify-center items-center m-2" value="Save Changes">
         </form>
         <?php endif; ?>
         <script>

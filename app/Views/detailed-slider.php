@@ -3,28 +3,28 @@
    <div class="relative mt-4 m-4">
        <div class="flex flex-row justify-between mb-4">
            <div class="flex items-center">
-               <input type="number" id="min-value" class="w-16 px-2 py-1 border rounded text-black" value="0" min="0" max="100">
+               <input type="number" step="0.01" id="min-value-detailed" class="w-16 px-2 py-1 border rounded text-black" value="0.10" min="0" max="100">
            </div>
            <div class="flex items-center">
-               <input type="number" id="max-value" class="w-16 px-2 py-1 border rounded text-black" value="100" min="0" max="100">
+               <input type="number" step="0.01" id="max-value-detailed" class="w-16 px-2 py-1 border rounded text-black" value="100" min="0" max="100">
            </div>
        </div>
 
        <div class="relative h-2 bg-gray-200 rounded">
-           <div class="absolute h-full bg-emerald-300 rounded" id="range-bar"></div>
-           <input type="range" id="min-range" min="0" max="100" value="0" class="absolute w-full h-full opacity-0 cursor-pointer">
-           <input type="range" id="max-range" min="0" max="100" value="100" class="absolute w-full h-full opacity-0 cursor-pointer">
+           <div class="absolute h-full bg-emerald-300 rounded" id="detailed-range-bar"></div>
+           <input type="range" id="min-range-detailed" min="0" max="100" value="0.10" step="0.01" class="absolute w-full h-full opacity-0 cursor-pointer">
+           <input type="range" id="max-range-detailed" min="0" max="100" value="100" step="0.01" class="absolute w-full h-full opacity-0 cursor-pointer">
        </div>
    </div>
 </label>
 
 <script>
 $(document).ready(function() {
-   const minRange = $('#min-range');
-   const maxRange = $('#max-range');
-   const minValue = $('#min-value');
-   const maxValue = $('#max-value');
-   const rangeBar = $('#range-bar');
+   const minRange = $('#min-range-detailed');
+   const maxRange = $('#max-range-detailed');
+   const minValue = $('#min-value-detailed');
+   const maxValue = $('#max-value-detailed');
+   const rangeBar = $('#detailed-range-bar');
 
    function updateRangeBar() {
        const min = parseInt(minRange.val());
