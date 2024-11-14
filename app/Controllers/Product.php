@@ -130,6 +130,7 @@ class Product extends BaseController
     {
         $productModel = new \App\Models\ProductModel();
         $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
+        $data['dynamic_fields'] = $productModel->query("SELECT * FROM category_template WHERE category_id = ?", [$data['categories'][0]->id])->getResult();
         return view('product_create', $data);
     }
 
@@ -180,6 +181,8 @@ class Product extends BaseController
         FROM product
         WHERE id = ?", [$id])->getRow();
         $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
+        $data['current_category'] = $productModel->query("SELECT category.id, category.name FROM category WHERE id = ?", [$id])->getRow();
+        $data['dynamic_fields'] = $productModel->query("SELECT * FROM category_template WHERE category_id = ?", [$data['current_category']->id])->getResult();
         return view('product_edit', $data);
     }
 
@@ -198,79 +201,79 @@ class Product extends BaseController
             'test' => $this->request->getPost('test'),
         ];
 
-        // get post data except all predefined inputs
-        $productModel->query("INSERT INTO category_template (template) VALUES(?)", array(json_encode(array_slice($_POST, 8, count($_POST) - 8))));
+        // get post data except all predefined inputs and bind it to the category_id
+        $productModel->query("INSERT INTO category_template (template, category_id) VALUES(?, ?)", [json_encode(array_slice($_POST, 8, count($_POST) - 8)), $id]);
         // echo json_encode(array_slice($_POST, 8, count($_POST) - 8));
         // save the array to db category_id => array(input_name, value)
 
-        // $rule = [
-        //     'name' => 'required|min_length[3]|max_length[255]',
-        //     'image' => [
-        //         'label' => 'Image',
-        //         'rules' => 'max_size[image,1024]|max_dims[image,1024,1024]|mime_in[image,image/jpg,image/jpeg,image/png]',
-        //     ],
-        //     'manufacturer' => 'required|min_length[3]|max_length[255]',
-        //     'weight' => 'required|numeric|greater_than_equal_to[0.01]',
-        //     'size' => 'required|numeric|greater_than_equal_to[1]',
-        //     'tags' => 'required|min_length[1]|max_length[255]',
-        //     'category_id' => 'required|min_length[1]|max_length[255]',
-        // ];
+        $rule = [
+            'name' => 'required|min_length[3]|max_length[255]',
+            'image' => [
+                'label' => 'Image',
+                'rules' => 'max_size[image,1024]|max_dims[image,1024,1024]|mime_in[image,image/jpg,image/jpeg,image/png]',
+            ],
+            'manufacturer' => 'required|min_length[3]|max_length[255]',
+            'weight' => 'required|numeric|greater_than_equal_to[0.01]',
+            'size' => 'required|numeric|greater_than_equal_to[1]',
+            'tags' => 'required|min_length[1]|max_length[255]',
+            'category_id' => 'required|min_length[1]|max_length[255]',
+        ];
 
-        // // echo print_r($data['category_id']);
+        // echo print_r($data['category_id']);
 
-        // $data['tags'] = json_encode(explode("|", $data['tags']));
-        // $data['category_id'] = json_encode(explode("|", $data['category_id']));
+        $data['tags'] = json_encode(explode("|", $data['tags']));
+        $data['category_id'] = json_encode(explode("|", $data['category_id']));
 
-        // if (!$this->validate($rule)) {
-        //     return view('product_edit', [
-        //         'errors' => $this->validator->getErrors(),
-        //         'product' => $productModel->find($id),
-        //     ]);
-        // }
+        if (!$this->validate($rule)) {
+            return view('product_edit', [
+                'errors' => $this->validator->getErrors(),
+                'product' => $productModel->find($id),
+            ]);
+        }
 
-        // $images = $this->request->getFiles();
-        // $productImages = [];
-        // foreach ($images['image'] as $image) {
-        //     if ($image->isValid() && !$image->hasMoved()) {
-        //         $image->move(WRITEPATH . 'uploads', $image->getName());
-        //         $productImages[] = "uploads/".$image->getName();
-        //     }
-        // }
+        $images = $this->request->getFiles();
+        $productImages = [];
+        foreach ($images['image'] as $image) {
+            if ($image->isValid() && !$image->hasMoved()) {
+                $image->move(WRITEPATH . 'uploads', $image->getName());
+                $productImages[] = "uploads/".$image->getName();
+            }
+        }
 
-        // // TEST add existing images from db
+        // TEST add existing images from db
 
-        // $existingPics = $productModel->query("SELECT
-        // metadata->>'image' as images
-        // FROM product
-        // WHERE id = ?", [$id])->getRow();
-        // $existingPics = json_decode($existingPics->images, true);
+        $existingPics = $productModel->query("SELECT
+        metadata->>'image' as images
+        FROM product
+        WHERE id = ?", [$id])->getRow();
+        $existingPics = json_decode($existingPics->images, true);
 
-        // if (gettype($existingPics) == 'array') {
-        //     if (count($existingPics) > 0) {
-        //         foreach ($existingPics as $pic) {
-        //             if (substr_count($pic, "uploads/") <= 0) {
-        //                 // break;
-        //                 $productImages[] = "uploads/".$pic;
-        //             } else {
-        //                 $productImages[] = $pic;
-        //             }
-        //         }
-        //     }
-        // }
+        if (gettype($existingPics) == 'array') {
+            if (count($existingPics) > 0) {
+                foreach ($existingPics as $pic) {
+                    if (substr_count($pic, "uploads/") <= 0) {
+                        // break;
+                        $productImages[] = "uploads/".$pic;
+                    } else {
+                        $productImages[] = $pic;
+                    }
+                }
+            }
+        }
 
-        // $data['image'] = json_encode($productImages);
+        $data['image'] = json_encode($productImages);
 
-        // $data['metadata'] = json_encode(array_slice($data, 1));
-        // $product->fill($data);
+        $data['metadata'] = json_encode(array_slice($data, 1));
+        $product->fill($data);
 
-        // // use this query
-        // // UPDATE product SET metadata = jsonb_set(metadata, '{manufacturer}', '"Sigma"') WHERE id = 1;
+        // use this query
+        // UPDATE product SET metadata = jsonb_set(metadata, '{manufacturer}', '"Sigma"') WHERE id = 1;
 
-        // if ($productModel->update($id, $data)) {
-        //     return view('success_message', [
-        //         'message' => 'product ' . $product->name . ' has been updated'
-        //     ]);
-        // }
+        if ($productModel->update($id, $data)) {
+            return view('success_message', [
+                'message' => 'product ' . $product->name . ' has been updated'
+            ]);
+        }
     }
 
     public function deleteImages(int $id)

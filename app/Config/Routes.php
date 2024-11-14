@@ -69,3 +69,11 @@ $routes->post('warehouse/(:num)/product/(:num)/delete', 'WarehouseProduct::destr
 $routes->get('warehouse/(:num)/product/(:num)/edit', 'WarehouseProduct::showEdit/$1/$2');
 
 $routes->post('warehouse/(:num)/product/(:num)/edit', 'WarehouseProduct::edit/$1/$2');
+
+// Template routes
+
+$routes->get('/template', 'Templatefields::index');
+
+$routes->get('/template/(:num)/create', 'Templatefields::showCreate');
+
+$routes->post('/template/(:num)/create', 'Templatefields::create/$1');

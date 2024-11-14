@@ -91,6 +91,12 @@
                 <p class="mx-2">Cm³</p>
             </div>
         </label>
+        <?php foreach(json_decode($dynamic_fields[0]->template) as $field => $value) : ?>
+            <label class="flex flex-col">
+                <?= $field ?>:
+                <input type="text" name="<?= $field ?>" value="<?= $value ?>" class="rounded-md bg-gray-200 text-center">
+            </label>
+        <?php endforeach; ?>
         <button type="submit" class="bg-emerald-300 rounded-md px-2">Create</button>
     </form>
     <script>

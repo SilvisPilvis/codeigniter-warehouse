@@ -129,7 +129,7 @@
     }
 </script>
 
-    
+
     <?php if(isset($errors)) : ?>
         <?php if (gettype($errors) == 'array') : ?>
             <ul>
@@ -159,7 +159,8 @@
                 Categories:
                 <?php if ($categories) : ?>
                 <select id="category" class="rounded-md bg-gray-200 text-center" oninput="addCategory()">
-                <option value="">None</option>
+                <!-- <option value="">None</option> -->
+                <option value="<?= $current_category->id ?>"><?= $current_category->name ?></option>
                 <?php foreach ($categories as $category) : ?>
                     <option value="<?= $category->id ?>"><?= $category->name ?></option>
                 <?php endforeach; ?>
@@ -227,11 +228,23 @@
                 Created at:
                 <input type="datetime" name="date" readonly value="<?= $product->created_at ?>" class="rounded-md bg-gray-200 text-center">
             </label>
+            <?php if(count($dynamic_fields) > 0) : ?>
+                <?php foreach(json_decode($dynamic_fields[0]->template) as $field => $value) : ?>
+                <label class="flex flex-col">
+                    <?= $field ?>:
+                    <input type="text" name="<?= $field ?>" value="<?= $value ?>" class="rounded-md bg-gray-200 text-center">
+                </label>
+                <?php endforeach; ?>
+            <?php endif; ?>
             <div class="bg-emerald-300 rounded-md flex justify-center items-center m-2" onclick="addField()">Add Field</div>
             <input type="submit" class="bg-emerald-300 rounded-md flex justify-center items-center m-2" value="Save Changes">
         </form>
         <?php endif; ?>
         <script>
+        if($("#category").val()) {
+            $("#post-categories").val($("#category").val());
+        }
+
         let categories = [];
         function addCategory() {
             if (!categories.includes($("#category").val())) {

@@ -14,9 +14,8 @@ class Category extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
-            'name' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '100',
+            'template' => [
+                'type'       => 'JSONB',
             ],
             'created_at' => [
                 'type' => 'timestamp',
@@ -27,6 +26,12 @@ class Category extends Migration
                 'type' => 'timestamp',
                 'null' => true,
                 'default' => 'NOW()',
+            ],
+            'category_id' => [
+                'type'       => 'INT',
+                'unsigned'   => true,
+                'null'       => true,
+                'default'    => null,
             ],
         ]);
         $this->forge->addPrimaryKey("id");
