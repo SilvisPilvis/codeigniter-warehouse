@@ -26,15 +26,37 @@ class Templatefields extends BaseController
         $templateFields = new \App\Models\TemplatefieldsModel();
         $templateFields->data = $template;
         $templateFields->template_id = $id;
-        $template->query("INSERT INTO templatefields (data, category_id) VALUES (:data, :category_id)", ['data' => $template['data'], 'category_id' => $id]);
-        // $templateFields->save();
-        // echo $template;
+
+        $pairs = explode(';', trim($template, '; '));
+        $result = array();
+        foreach ($pairs as $pair) {
+            if (!empty($pair)) {
+                list($key, $value) = explode(':', trim($pair));
+                $result[trim($key)] = trim($value);
+            }
+        }
+
+        // echo json_encode($result);
+        $templateFields->query("INSERT INTO category_template (template, category_id) VALUES (?, ?)", [json_encode($result), $id]);
         $data['message'] = 'Template created successfully';
-        return view('success_message');
+        return view('success_message', $data);
     }
 
-    public function showCreate()
+    public function showCreate($id)
     {
-        return view('template_create');
+        $template = new \App\Models\TemplatefieldsModel();
+        $data['id'] = $id;
+        $data['categories'] = $template->query("SELECT template FROM category_template")->getResult();
+        $test = $data['categories'][0]->template;
+
+        $result = array();
+        foreach (json_decode($test) as $key => $value) {
+            $result[] = "$key:$value";
+            // echo $key.':'.$value;
+        }
+        $result[count($data['categories'])] .= ';';
+
+        $data['categories'] = $result;
+        return view('template_create', $data);
     }
 }

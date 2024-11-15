@@ -74,6 +74,6 @@ $routes->post('warehouse/(:num)/product/(:num)/edit', 'WarehouseProduct::edit/$1
 
 $routes->get('/template', 'Templatefields::index');
 
-$routes->get('/template/(:num)/create', 'Templatefields::showCreate');
+$routes->get('/template/(:num)/create', 'Templatefields::showCreate/$1');
 
 $routes->post('/template/(:num)/create', 'Templatefields::create/$1');

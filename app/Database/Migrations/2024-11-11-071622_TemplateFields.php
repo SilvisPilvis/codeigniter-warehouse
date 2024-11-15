@@ -29,6 +29,7 @@ class Category extends Migration
             ],
             'category_id' => [
                 'type'       => 'INT',
+                'unique'     => true,
                 'unsigned'   => true,
                 'null'       => true,
                 'default'    => null,
