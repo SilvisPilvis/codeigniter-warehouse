@@ -181,8 +181,10 @@ class Product extends BaseController
         FROM product
         WHERE id = ?", [$id])->getRow();
         $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
+        // should be where id = product.category_id
         $data['current_category'] = $productModel->query("SELECT category.id, category.name FROM category WHERE id = ?", [$id])->getRow();
-        $data['dynamic_fields'] = $productModel->query("SELECT * FROM category_template WHERE category_id = ?", [$data['current_category']->id])->getResult();
+        // we can comment this and just use js
+        // $data['dynamic_fields'] = $productModel->query("SELECT * FROM category_template WHERE category_id = ?", [$data['current_category']->id])->getResult();
         return view('product_edit', $data);
     }
 
@@ -235,8 +237,10 @@ class Product extends BaseController
         $productImages = [];
         foreach ($images['image'] as $image) {
             if ($image->isValid() && !$image->hasMoved()) {
-                $image->move(WRITEPATH . 'uploads', $image->getName());
-                $productImages[] = "uploads/".$image->getName();
+                // upload image and replace all spaces with underscores
+                $image->move(WRITEPATH . 'uploads', str_replace(" ", "_", $image->getName()));
+                $productImages[] = "uploads/".str_replace(" ", "_", $image->getName());
+                // $productImages[] = "uploads/".$image->getName();
             }
         }
 
@@ -395,9 +399,8 @@ class Product extends BaseController
             'category_id' => 'required|greater_than_equal_to[1]',
         ];
 
-        $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
-
         if (!$this->validate($rule)) {
+            $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
             return view('product_create', [
                 'errors' => $this->validator->getErrors(),
                 'categories' => $data['categories']
@@ -411,7 +414,9 @@ class Product extends BaseController
         $productImages = [];
         foreach ($images['image'] as $image) {
             if ($image->isValid() && !$image->hasMoved()) {
-                $productImages[] = "uploads/".$image->getName();
+                // upload image and replace all spaces with underscores
+                $image->move(WRITEPATH . 'uploads', str_replace(" ", "_", $image->getName()));
+                $productImages[] = "uploads/".str_replace(" ", "_", $image->getName());
             }
         }
         $data['image'] = json_encode($productImages);
