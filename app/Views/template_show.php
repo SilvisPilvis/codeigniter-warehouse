@@ -13,7 +13,11 @@
 <?php if ($categories): ?>
     <div class="flex flex-col items-center justify-evenly h-[90%]">
         <?php foreach($categories as $category): ?>
-            <a class="flex justify-center items-center cursor-pointer text-black no-underline min-w-24 py-4 bg-sky-400 rounded-md" href="<?= base_url('template/'.$category->id.'/create') ?>"><?= $category->name ?></a>
+            <div class="flex flex-row items-center justify-center gap-2">
+                <a class="flex justify-center items-center cursor-pointer text-black no-underline min-w-24 py-4 bg-sky-400 rounded-md" href="<?= base_url('template/'.$category->id.'/create') ?>"><?= $category->name ?></a>
+                <a href="<?= base_url('template/'.$category->id.'/edit') ?>" class="bg-emerald-300 rounded-md p-4">Edit</a>
+                <a href="<?= base_url('template/'.$category->id.'/create') ?>" class="bg-orange-300 rounded-md p-4">Create</a>
+            </div>
         <?php endforeach; ?>
     </div>
 <?php endif; ?>

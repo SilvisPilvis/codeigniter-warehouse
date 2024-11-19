@@ -41,10 +41,34 @@
         function submitTags() {
             console.log($("#tags").val(tags.join("|")));
         }
+
+        function getFields(data) {
+            let url = 'http://localhost:8080/template/'+data.value+'/fields'
+            $.ajax({
+                url: url,
+                type: "GET",
+                success: function(data) {
+                    console.log(JSON.parse(data));
+                    let res = JSON.parse(data);
+                    $("#button").remove();
+                    res.forEach(item => {
+                        const [label, type] = item.split(':');
+                        const cleanType = type.replace(';', '');
+
+                        $('#form').append(`
+                            <label class="flex flex-col">${label.charAt(0).toUpperCase() + label.slice(1)}:
+                                <input type="${cleanType}" id="${label}" name="${label}" class="rounded-md bg-gray-200 text-center">
+                            </label>
+                        `);
+                    });
+                    $('#form').append(`<button id="button" type="submit" class="bg-emerald-300 rounded-md px-2">Create</button>`);
+                }
+            });
+        }
     </script>
 
     <?php form_open_multipart('product/create') ?>
-    <form action="<?= base_url('product/create') ?>" method="post" enctype="multipart/form-data" class="flex flex-col gap-4 bg-teal-100 p-4 rounded-md my-auto">
+    <form id="form" action="<?= base_url('product/create') ?>" method="post" enctype="multipart/form-data" class="flex flex-col gap-4 bg-teal-100 p-4 rounded-md my-auto">
         <label class="flex flex-col">
             Product Name:
             <input type="text" name="name" class="rounded-md bg-gray-200 text-center">
@@ -59,7 +83,7 @@
         <label class="flex flex-col">
             Categories:
             <?php if ($categories) : ?>
-                <select id="category" class="rounded-md bg-gray-200 text-center" oninput="addCategory()">
+                <select id="category" class="rounded-md bg-gray-200 text-center" oninput="addCategory()" onchange="getFields(this)">
                 <option value="">None</option>
                 <?php foreach ($categories as $category) : ?>
                     <option value="<?= $category->id ?>"><?= $category->name ?></option>
@@ -91,13 +115,7 @@
                 <p class="mx-2">Cm³</p>
             </div>
         </label>
-        <?php foreach(json_decode($dynamic_fields[0]->template) as $field => $value) : ?>
-            <label class="flex flex-col">
-                <?= $field ?>:
-                <input type="text" name="<?= $field ?>" value="<?= $value ?>" class="rounded-md bg-gray-200 text-center">
-            </label>
-        <?php endforeach; ?>
-        <button type="submit" class="bg-emerald-300 rounded-md px-2">Create</button>
+        <button id="button" type="submit" class="bg-emerald-300 rounded-md px-2">Create</button>
     </form>
     <script>
         let categories = [];

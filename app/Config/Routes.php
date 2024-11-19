@@ -77,3 +77,9 @@ $routes->get('/template', 'Templatefields::index');
 $routes->get('/template/(:num)/create', 'Templatefields::showCreate/$1');
 
 $routes->post('/template/(:num)/create', 'Templatefields::create/$1');
+
+$routes->get('/template/(:num)/edit', 'Templatefields::showUpdate/$1');
+
+$routes->post('/template/(:num)/edit', 'Templatefields::update/$1');
+
+$routes->get('/template/(:num)/fields', 'Templatefields::getFields/$1');

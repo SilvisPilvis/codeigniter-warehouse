@@ -130,7 +130,7 @@ class Product extends BaseController
     {
         $productModel = new \App\Models\ProductModel();
         $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
-        $data['dynamic_fields'] = $productModel->query("SELECT * FROM category_template WHERE category_id = ?", [$data['categories'][0]->id])->getResult();
+        // $data['dynamic_fields'] = $productModel->query("SELECT * FROM category_template WHERE category_id = ?", [$data['categories'][0]->id])->getResult();
         return view('product_create', $data);
     }
 
@@ -392,7 +392,7 @@ class Product extends BaseController
             'weight' => 'required|numeric|greater_than_equal_to[0.01]',
             'size' => 'required|numeric|greater_than_equal_to[1]',
             'tags' => 'required|min_length[1]|max_length[255]',
-            'category_id' => 'required|min_length[1]|max_length[255]',
+            'category_id' => 'required|greater_than_equal_to[1]',
         ];
 
         $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
