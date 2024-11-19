@@ -128,29 +128,18 @@
         `);
     }
 
-    function getFields(data) {
-            let url = 'http://localhost:8080/template/'+data.value+'/fields'
-            $.ajax({
-                url: url,
-                type: "GET",
-                success: function(data) {
-                    console.log(JSON.parse(data));
-                    let res = JSON.parse(data);
-                    $("#button").remove();
-                    res.forEach(item => {
-                        const [label, type] = item.split(':');
-                        const cleanType = type.replace(';', '');
 
-                        $('#form').append(`
-                            <label class="flex flex-col">${label.charAt(0).toUpperCase() + label.slice(1)}:
-                                <input type="${cleanType}" id="${label}" name="${label}" class="rounded-md bg-gray-200 text-center">
-                            </label>
-                        `);
-                    });
-                    $('#form').append(`<button id="button" type="submit" class="bg-emerald-300 rounded-md px-2">Create</button>`);
-                }
-            });
-    }
+
+    // $(document).ready(
+    // function() {
+    //     // console.log(document.getElementById("category").value);
+    //     let temp = document.getElementById("category").value;
+    //     if (temp !== undefined){
+    //         templates = getFilledTemplates(temp);
+    //     }
+    //    // getFilledTemplates(temp);
+    //    }
+    // );
 
     $(document).ready(
         function() {
@@ -173,13 +162,13 @@
             <a href="javascript:history.go(-1)" class="bg-emerald-300 rounded-md p-2 flex justify-center items-center">Go Back</a>
         <?php endif; ?>
     <?php else : ?>
-        <form id="form" action="<?= base_url('product/' . $product->id.'/images/delete') ?>" method="post">
+        <form action="<?= base_url('product/' . $product->id.'/images/delete') ?>" method="post">
             <button class="bg-red-300 rounded-md flex justify-center items-center m-2 p-2">Delete Images</button>
         </form>
-        <form action="<?= base_url('product/edit/' . $product->id) ?>" enctype="multipart/form-data" method="post" id="form" class="flex flex-col gap-4 bg-teal-100 p-4 rounded-md my-auto">
+        <form id="form" action="<?= base_url('product/edit/' . $product->id) ?>" enctype="multipart/form-data" method="post" id="form" class="flex flex-col gap-4 bg-teal-100 p-4 rounded-md my-auto">
             <label class="flex flex-col">
                 Product Id:
-                <input type="number" name="id" id="" value="<?= $product->id ?>" readonly class="rounded-md bg-gray-200 text-center">
+                <input type="number" name="id" id="product-id" value="<?= $product->id ?>" readonly class="rounded-md bg-gray-200 text-center">
             </label>
             <label class="flex flex-col">
                 Product Name:
@@ -189,8 +178,7 @@
                 Categories:
                 <?php if ($categories) : ?>
                 <select id="category" class="rounded-md bg-gray-200 text-center" oninput="addCategory()" onchange="getFields(this)">
-                <!-- <option value="">None</option> -->
-                <option value="<?= $current_category->id ?>"><?= $current_category->name ?></option>
+                <option value="<?= $current_category->id ?>" selected><?= $current_category->name ?></option>
                 <?php foreach ($categories as $category) : ?>
                     <option value="<?= $category->id ?>"><?= $category->name ?></option>
                 <?php endforeach; ?>
@@ -266,11 +254,74 @@
                 </label>
                 <?php endforeach; ?>
             <?php endif; ?>
-            <div class="bg-emerald-300 rounded-md flex justify-center items-center m-2" onclick="addField()">Add Field</div>
+            <!-- <div class="bg-emerald-300 rounded-md flex justify-center items-center m-2" onclick="addField()">Add Field</div> -->
             <input id="button" type="submit" class="bg-emerald-300 rounded-md flex justify-center items-center m-2" value="Save Changes">
         </form>
         <?php endif; ?>
-        <script>
+        <script type="text/javascript" lang="js">
+        // console.log($("#category").val());
+        let templates = [];
+
+        function getFilledTemplates(data)
+        {
+            // this should be the product id
+            let url = 'http://localhost:8080/product/'+data+'/template'
+            // let url = 'http://localhost:8080/product/'+data+'/template'
+
+            $.ajax({
+                url: url,
+                type: "GET",
+                success: function(data) {
+                    // console.log(data);
+                    // console.log(JSON.parse(data));
+                    templates = JSON.parse(data);
+                    return templates;
+                    // return JSON.parse(data);
+                }
+           });
+
+        }
+
+        let test = $("#product-id").val();
+        templates = getFilledTemplates(test);
+        console.log("templates: " + templates[1]);
+
+        function getFields(data) {
+            if(data === undefined){
+                console.error("Category is undefined");
+                return;
+            }
+
+            // this should be category_id
+            let url = 'http://localhost:8080/template/'+data+'/fields'
+            $.ajax({
+                url: url,
+                type: "GET",
+                success: function(data) {
+                    console.log(JSON.parse(data));
+                    let res = JSON.parse(data);
+                    $("#button").remove();
+                    let i = 0;
+                    res.forEach(item => {
+                        const [label, type] = item.split(':');
+                        const cleanType = type.replace(';', '');
+
+                        $('#form').append(`
+                            <label class="flex flex-col">${label.charAt(0).toUpperCase() + label.slice(1)}:
+                                <input type="${cleanType}" id="${label}" name="${label}" value="${templates[i]}" class="rounded-md bg-gray-200 text-center">
+                            </label>
+                        `);
+                    i++;
+                    });
+                    $('#form').append(`<button id="button" type="submit" class="bg-emerald-300 rounded-md px-2">Create</button>`);
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            getFields($("#category").val());
+        });
+
         if($("#category").val()) {
             $("#post-categories").val($("#category").val());
         }
@@ -286,6 +337,7 @@
             }
             console.log($("#post-categories").val());
         }
-        </script>
+
+       </script>
 </body>
 </html>

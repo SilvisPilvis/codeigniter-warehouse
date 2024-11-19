@@ -182,7 +182,10 @@ class Product extends BaseController
         WHERE id = ?", [$id])->getRow();
         $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
         // should be where id = product.category_id
-        $data['current_category'] = $productModel->query("SELECT category.id, category.name FROM category WHERE id = ?", [$id])->getRow();
+        $data['current_category'] = $productModel->query("SELECT metadata->>'category_id' category_id from product WHERE product.id = ?", [$id])->getRow();
+        $data['current_category'] = json_decode($data['current_category']->category_id)[0];
+        $data['current_category'] = $productModel->query("SELECT id, name FROM category WHERE id = ?", [$data['current_category']])->getRow();
+        $data['dynamic_fields'] = [];
         // we can comment this and just use js
         // $data['dynamic_fields'] = $productModel->query("SELECT * FROM category_template WHERE category_id = ?", [$data['current_category']->id])->getResult();
         return view('product_edit', $data);
@@ -399,6 +402,8 @@ class Product extends BaseController
             'category_id' => 'required|greater_than_equal_to[1]',
         ];
 
+        $data['template'] = array_slice($_POST, 6, count($_POST) - 6);
+
         if (!$this->validate($rule)) {
             $data['categories'] = $productModel->query("SELECT category.id, category.name FROM category")->getResult();
             return view('product_create', [
@@ -422,6 +427,7 @@ class Product extends BaseController
         $data['image'] = json_encode($productImages);
 
         $data['metadata'] = json_encode(array_slice($data, 1));
+        // echo json_encode(array_slice($data, 1));
         $product->fill($data);
 
         if ($productModel->save($product)) {
@@ -429,6 +435,22 @@ class Product extends BaseController
                 'message' => $product->name . ' has been created'
             ]);
         }
+    }
+
+    public function getTemplateValues(int $id)
+    {
+        $productModel = new \App\Models\ProductModel();
+        $values = $productModel->query("SELECT metadata->>'template' template FROM product WHERE product.id = ?", [$id])->getResult();
+        if (!$values) {
+            print_r(['errors' => 'No template']);
+        } else {
+            $res = [];
+            foreach (json_decode($values[0]->template) as $key => $value) {
+                $res[] = $value;
+            }
+            print_r(json_encode($res));
+        }
+
     }
 
     public function testSuccess()
