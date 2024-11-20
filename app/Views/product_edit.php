@@ -262,9 +262,14 @@
         // console.log($("#category").val());
         let templates = [];
 
+        // gets the values for the fields
         function getFilledTemplates(data)
         {
             // this should be the product id
+            if(data === undefined){
+                console.error("Product id is undefined");
+                return;
+            }
             let url = 'http://localhost:8080/product/'+data+'/template'
             // let url = 'http://localhost:8080/product/'+data+'/template'
 
@@ -282,9 +287,21 @@
 
         }
 
+        function getValues() {
+            $.ajax({
+                url: 'http://localhost:8080/template/value-sets',
+                type: "GET",
+                success: function(data) {
+                    console.log(JSON.parse(data));
+                    // return JSON.parse(data);
+                }
+           });
+        }
+
         let test = $("#product-id").val();
         templates = getFilledTemplates(test);
-        console.log("templates: " + templates[1]);
+        // console.log("templates: " + templates);
+        let values = getValues();
 
         function getFields(data) {
             if(data === undefined){
@@ -298,14 +315,18 @@
                 url: url,
                 type: "GET",
                 success: function(data) {
-                    console.log(JSON.parse(data));
+                    // console.log(JSON.parse(data));
                     let res = JSON.parse(data);
                     $("#button").remove();
                     let i = 0;
                     res.forEach(item => {
+                        if (item.split(':').length > 2) {
+                            // if the last value is in values array
+                        }
+
                         const [label, type] = item.split(':');
                         const cleanType = type.replace(';', '');
-
+                        // if value is in values array then do the same as bellow but loop trough values and add option
                         $('#form').append(`
                             <label class="flex flex-col">${label.charAt(0).toUpperCase() + label.slice(1)}:
                                 <input type="${cleanType}" id="${label}" name="${label}" value="${templates[i]}" class="rounded-md bg-gray-200 text-center">

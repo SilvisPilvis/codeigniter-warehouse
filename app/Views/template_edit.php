@@ -28,7 +28,7 @@
             <label class="flex flex-col w-full items-center justify-center flex-wrap gap-4 mt-4">
                 <textarea class=" h-96 bg-gray-300 rounded-md w-96 text-black resize-none" name="data" id="description" required><?= implode(';'.PHP_EOL, $categories); ?></textarea>
             </label>
-            <button type="submit" class="bg-emerald-300 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded">Create</button>
+            <button type="submit" class="bg-emerald-300 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded">Edit</button>
         </form>
     </div>
 </body>

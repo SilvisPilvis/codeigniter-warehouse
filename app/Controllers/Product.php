@@ -36,28 +36,6 @@ class Product extends BaseController
                 break;
         }
 
-        // if ($tags) {
-        //     $filter = "";
-        //     foreach (explode("|", $tags) as $index => $tag) {
-        //         if ($index === 0) {
-        //             $filter = "(product.*::text ILIKE '%" . $tag . "%' OR " .
-        //                 "metadata::text ILIKE '%" . $tag . "%')"; // Remove WHERE
-        //         } else {
-        //             $filter .= " AND (product.*::text ILIKE '%" . $tag . "%' OR " .
-        //                 "metadata::text ILIKE '%" . $tag . "%')";
-        //         }
-        //     }
-        // }
-
-        // // Add category search
-        // if ($categories) {  // Assuming $category_id is passed to the function
-        //     if ($filter) {
-        //         $filter .= " AND ";
-        //     }
-        //     // $filter .= `category_id @> '["`.$categories.`"]'::jsonb`;  // Checks if category_id array contains the value
-        //     $filter .= "category_id::text LIKE '%".$categories."%'";
-        // }
-
         if ($tags) {
             $filter = "";
             foreach (explode("|", $tags) as $index => $tag) {
@@ -464,6 +442,22 @@ class Product extends BaseController
     {
         return view('error_message', [
             'errors' => 'This is the error message'
+        ]);
+    }
+
+    public function testTemplate()
+    {
+        $productModel = new \App\Models\ProductModel();
+        $values["colors"] = ["red", "blue", "green", "yellow", "orange", "purple", "black", "white", "gray", "brown", "cornflowerblue"];
+        $values["colors_hex"] = ["#ff0000", "#0000ff", "#00ff00", "#ffff00", "#ff8000", "#800080", "#000000", "#ffffff", "#808080", "#a52a2a", "#6495ed"];
+        $values['materials'] = ["wood", "metal", "plastic"];
+        $values["sizes"] = ["small", "medium", "large"];
+        $values["gender"] = ["male", "female"];
+        $values["months"] = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+        $productModel->query("INSERT INTO template_values (value_sets, updated_at) VALUES(?, NOW())", [json_encode($values)]);
+        return view('success_message', [
+            'message' => 'This is the success message'
         ]);
     }
 }

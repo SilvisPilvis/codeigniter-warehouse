@@ -20,6 +20,9 @@ $routes->get('test', 'Product::testSuccess');
 $routes->get('test/error', 'Product::testError');
 
 $routes->get("test/tags", 'Product::getAllTags');
+
+$routes->get("test/template", 'Product::testTemplate');
+
 // Warehouse routes
 
 $routes->get('warehouse', 'Warehouse::index');
@@ -85,3 +88,5 @@ $routes->get('/template/(:num)/edit', 'Templatefields::showUpdate/$1');
 $routes->post('/template/(:num)/edit', 'Templatefields::update/$1');
 
 $routes->get('/template/(:num)/fields', 'Templatefields::getFields/$1');
+
+$routes->get('/template/value-sets', 'Templatefields::getValues');

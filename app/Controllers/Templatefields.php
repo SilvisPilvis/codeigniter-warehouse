@@ -45,16 +45,7 @@ class Templatefields extends BaseController
         $errors = [];
 
         $pairs = explode(';', trim($template, '; '));
-        $result = array();
-        foreach ($pairs as $pair) {
-            if (!empty($pair)) {
-                list($key, $value) = explode(':', trim($pair));
-                $result[trim($key)] = trim($value);
-                if (!array_key_exists($result[trim($key)], $allowedTypes)) {
-                    $errors[] = "Invalid velue type for field $key";
-                }
-            }
-        }
+        $result = processArray($pairs);
 
         if (!empty($errors)) {
             $data = [
@@ -66,7 +57,11 @@ class Templatefields extends BaseController
             $result = array();
             $test = $data['categories'][0]->template;
             foreach (json_decode($test) as $key => $value) {
-                $result[] = "$key:$value";
+                if ($value == "checkbox" || $value == "radio" || $value == "select") {
+                    $result[] = "$key:$value"; // add the template value to this
+                } else {
+                    $result[] = "$key:$value";
+                }
             }
             $result[count($data['categories'])] .= ';';
             $data['categories'] = $result;
@@ -94,7 +89,7 @@ class Templatefields extends BaseController
                 $result[] = "$key:$value";
                 // echo $key.':'.$value;
             }
-            $result[count($data['categories'])] .= ';';
+            $result[count($data['categories']) + 1] .= ';';
 
             $data['categories'] = $result;
         } else {
@@ -129,16 +124,8 @@ class Templatefields extends BaseController
         $errors = [];
 
         $pairs = explode(';', trim($template, '; '));
-        $result = array();
-        foreach ($pairs as $pair) {
-            if (!empty($pair)) {
-                list($key, $value) = explode(':', trim($pair));
-                $result[trim($key)] = trim($value);
-                if (!array_key_exists($result[trim($key)], $allowedTypes)) {
-                    $errors[] = "Invalid velue type for field $key";
-                }
-            }
-        }
+        $result = processArray($pairs);
+        // echo json_encode($result);
 
         if (!empty($errors)) {
             $data = [
@@ -177,7 +164,7 @@ class Templatefields extends BaseController
                 $result[] = "$key:$value";
                 // echo $key.':'.$value;
             }
-            $result[count($data['categories'])] .= ';';
+            $result[count($data['categories']) + 1] .= ';';
 
             $data['categories'] = $result;
         } else {
@@ -209,4 +196,39 @@ class Templatefields extends BaseController
             return ['errors' => 'No categories found'];
         }
     }
+
+    public function getValues()
+    {
+        $template = new \App\Models\TemplatefieldsModel();
+        $values = $template->query("SELECT value_sets FROM template_values;")->getResult();
+        print_r($values[0]->value_sets);
+        // return $values;
+    }
+
+}
+
+function processArray(array $input): array
+{
+    $result = [];
+
+    foreach ($input as $item) {
+        $parts = explode(':', $item);
+
+        if (count($parts) >= 2) {
+            $key = trim($parts[0]);
+
+            if (count($parts) == 2) {
+                // If only two parts, use second part as value
+                $value = $parts[1];
+            } else {
+                // If more than two parts, join the rest with ':'
+                array_shift($parts); // Remove the first element (key)
+                $value = implode(':', $parts);
+            }
+
+            $result[$key] = $value;
+        }
+    }
+
+    return $result;
 }
