@@ -113,6 +113,28 @@ class Product extends BaseController
         // --- template field types
         $fields = $template->query("SELECT template FROM category_template;")->getResult();
 
+        $padded = [];
+        foreach ($fields as $f) {
+            $padded[] = array_values(json_decode($f->template, true));
+        }
+
+        $padded = array_merge(...$padded);
+
+        for ($i = 0; $i < count($padded); $i++) {
+            if (explode(":", $padded[$i]) > 1) {
+                if (explode(':', $padded[$i])[0] == "checkbox" || explode(':', $padded[$i])[0] == "radio" || explode(':', $padded[$i])[0] == "select") {
+                    $padded[$i] = explode(':', $padded[$i])[0];
+                }
+            } else {
+                if (explode(':', $padded[$i])[1] == "checkbox" || explode(':', $padded[$i])[1] == "radio" || explode(':', $padded[$i])[1] == "select") {
+                    $padded[$i] = explode(':', $padded[$i])[1];
+                }
+            }
+        }
+
+        $padded = array_unique($padded);
+        print_r($padded);
+
         foreach ($fields as $field) {
             $res[] = array_values(json_decode($field->template, true));
         }
@@ -127,6 +149,11 @@ class Product extends BaseController
         $data['template_values'] = array_unique($temp);
 
         // --- end template field types
+        // --- template field values
+        $values = $template->query("SELECT value_sets FROM template_values;")->getResult();
+        $data['value_sets'] = json_decode($values[0]->value_sets);
+        // --- end template field values
+        // padded values if not select or checkbox or radio then pad array with 0
 
         return view('product_show', $data);
     }

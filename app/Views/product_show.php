@@ -185,7 +185,7 @@ function string2array($string)
             </label>
 
             <details>
-            <summary>Filter Id:</summary>
+                    <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Id:</summary>
                  <label class="flex flex-col text-black w-full" id="filter-num">
                     <!-- <button onclick="filter('#criteria-min', '#criteria-max')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
                     <?php include_once "doubleslider.php"; ?>
@@ -193,7 +193,7 @@ function string2array($string)
             </details>
             
             <details>
-            <summary>Filter Size:</summary>
+            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Size:</summary>
             <label class="flex flex-col text-black w-full" id="filter-num-detailed">
                 <?php include_once "detailed-slider.php"; ?>
             </label>
@@ -201,7 +201,7 @@ function string2array($string)
             
 
             <details>
-            <summary>Filter Manufacturer:</summary>
+            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Manufacturer:</summary>
             <label class="flex flex-col" id="filter-str-manufacturer">
                 <select id="criteria-str-val-manufcturer" class="rounded-md p-2 m-2" onchange="filter('#criteria-str-val-name', '#criteria-str-val-name', this)" name="manufacturer">
                     <?php if ($manufacturers != null || $manufacturers != "") : ?>
@@ -218,7 +218,7 @@ function string2array($string)
             </details>
 
             <details>
-            <summary>Filter Name:</summary>
+            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Name:</summary>
             <label class="flex flex-col" id="filter-str-name">
                 <select id="criteria-str-val-name" class="rounded-md p-2 m-2" onchange="filter('#criteria-str-val-name', '#criteria-str-val-name', this)" name="name">
                     <?php if ($names != null || $names != "") : ?>
@@ -237,9 +237,8 @@ function string2array($string)
             </details>
 
             <details>
-            <summary>Filter Date:</summary>
+            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Date:</summary>
             <label class="flex flex-col text-black w-full" id="filter-date">
-                Filter date:
                 <input type="date" name="criteria" class="rounded-md p-2 m-2 text-black">
                 <!-- <button onclick="filter('#filter-date', '#filter-date')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
@@ -249,9 +248,21 @@ function string2array($string)
 
             <?php foreach ($template as $key => $template) : ?>
                 <details>
-                <summary><?= $template ?></summary>
+                <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>"><?= $template ?></summary>
                 <label class="flex flex-col text-black w-full">
+                        <?php if ($template_values[$key] == "select") : ?>
+                            <select onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
+                                <?php foreach ($value_sets->colors as $value_set) : ?>
+                                    <option value="<?= $value_set ?>"><?= $value_set ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        <?php elseif ($template_values[$key] == "radio") : ?>
+                            <input type="radio" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
+                        <?php elseif ($template_values[$key] == "checkbox") : ?>
+                            <input type="checkbox" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
+                        <?php else : ?>
                         <input type="<?= $template_values[$key] ?>" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
+                        <?php endif; ?>
                 </label>
                 </details>
             <?php endforeach; ?>
