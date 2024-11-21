@@ -89,7 +89,11 @@ class Templatefields extends BaseController
                 $result[] = "$key:$value";
                 // echo $key.':'.$value;
             }
-            $result[count($data['categories']) + 1] .= ';';
+            if (count($data['categories']) + 1 <= count($data['categories'])) {
+                $result[count($data['categories']) + 1] .= ';';
+            } else {
+                $result[count($data['categories'])] .= ';';
+            }
 
             $data['categories'] = $result;
         } else {
@@ -203,6 +207,20 @@ class Templatefields extends BaseController
         $values = $template->query("SELECT value_sets FROM template_values;")->getResult();
         print_r($values[0]->value_sets);
         // return $values;
+    }
+
+    public function getAllFields()
+    {
+        $template = new \App\Models\TemplatefieldsModel();
+        $fields = $template->query("SELECT template FROM category_template;")->getResult();
+
+        foreach ($fields as $field) {
+            $result[] = array_keys(json_decode($field->template, true));
+        }
+
+        $result = array_merge(...$result);
+        print_r(array_unique($result));
+        return $result;
     }
 
 }

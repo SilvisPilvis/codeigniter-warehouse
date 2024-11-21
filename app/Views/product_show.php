@@ -31,119 +31,53 @@ function string2array($string)
     <?php endif; ?>
 
     <script>
+    function updateURLParameters(params) {
+        const url = new URL(window.location.href);
+        Object.keys(params).forEach(key => {
+            if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+                url.searchParams.set(key, params[key]);
+            }
+        });
+        window.history.replaceState({}, '', url);
+        // Optionally reload the page or fetch new data
+        window.location.href = url;
+    }
+
+    // Order handling
     function order() {
-        let url = document.location.href;
-        // if order exists replace it if no order then append
-        if (url.match(/\?/)) {
-            // If a get parameter exists
-            // if order exists and is not 1st get param
-            if (url.match(/&order/)) {
-                let filtered = url.split("&order")[0]+"&order="+encodeURI($("#order").val());
-                document.location = filtered;
-            }
-            // if 1st get param replace
-            if (!url.match(/&order/)) {
-                let part = url.split("?")[1]+"&order="+encodeURI($("#order").val());
-                let filtered = url.split("?")[0]+"?"+part;
-                document.location = filtered;
-            }
-        }else{
-            url = url.split("?")[0];
-            // If no get parameter
-            let filtered = url+"?order="+encodeURI($("#order").val());
-            document.location = filtered;
+        const orderValue = document.querySelector('#order').value;
+        updateURLParameters({ order: orderValue });
+    }
+
+    // Tags search handling
+    let tagsList = [];
+
+    function addTagToList(tag) {
+        if (!tagsList.includes(tag)) {
+            tagsList.push(tag);
+            document.querySelector('#searched-tags').value = tagsList.join(',');
+            // Update the search input to show current tags
+            document.querySelector('input[list="tags-search"]').value = tagsList.join(', ');
         }
     }
-
-    function filter(minVal, maxVal) {
-        // if a filter exists replace it if no filter then append
-        let url = document.location.href;
-        if (url.match(/\?/)) {
-            if (url.match(/&filter/)) {
-                let filtered = url.split("&filter")[0]+"&filter="+encodeURI(document.getElementById("filter").value)+"&criteriaMin="+encodeURI($(minVal).val())+"&criteriaMax="+encodeURI($(maxVal).val());
-                document.location = filtered;
-            }tagSearch
-            if (!url.match(/&filter/)) {
-                //error here
-                let part = url.split("?")[1]+"&filter="+encodeURI(document.getElementById("filter").value)+"&criteriaMin="+encodeURI($(minVal).val())+"&criteriaMax="+encodeURI($(maxVal).val());
-                let filtered = url.split("?")[0]+"?"+part;
-                document.location = filtered;
-            }
-        }else{
-            //error here
-            url = url.split("?")[0];
-            let filtered = url+"?filter="+encodeURI(document.getElementById("filter").value)+"&criteriaMin="+encodeURI($(minVal).val())+"&criteriaMax="+encodeURI($(maxVal).val());
-            document.location = filtered;
-        }
-    }
-
-    let tags = [];
-
-    const queryString = window.location.search;
-    const urlParams = new URLSearchParams(queryString);
-
-    if (urlParams.has('tags')) {
-        tags = urlParams.get('tags').split("|");
-    }
-
-    // add clear tags
 
     function searchTag(input) {
-        tags.push(input.value);
-        $("#searched-tags").val(tags.join("|"));
-        console.log($("#searched-tags").val());
+        const tag = input.value.trim();
+        if (tag && !tagsList.includes(tag)) {
+            addTagToList(tag);
+        }
+        input.value = ''; // Clear the input after adding
     }
 
     function tagsSearch() {
-        let url = document.location.href;
-        // if order exists replace it if no order then append
-        if (url.match(/\?/)) {
-            // If a get parameter exists
-            // if order exists and is not 1st get param
-            if (url.match(/&tags/)) {
-                let filtered = url.split("&tags")[0]+"&tags="+encodeURI(tags.join("|"));
-                document.location = filtered;
-            }
-            // if 1st get param replace
-            if (!url.match(/&tags/)) {
-                let part = url.split("?")[1]+"&tags="+encodeURI(tags.join("|"));
-                let filtered = url.split("?")[0]+"?"+part;
-                document.location = filtered;
-            }
-        }else{
-            url = url.split("?")[0];
-            // If no get parameter
-            let filtered = url+"?tags="+encodeURI(tags.join("|"));
-            document.location = filtered;
-        }
+        const tags = document.querySelector('#searched-tags').value;
+        updateURLParameters({ tags: tags });
     }
 
-    function addTagToList(input) {
-        let url = document.location.href;
-        // if contains remove tag
-        if (!tags.includes(input)) {
-            tags.push(input);
-        }else{
-            tags.splice(tags.indexOf(input), 1);
-        }
-
-        if (url.match(/\?/)) {
-            if (url.match(/&tags/)) {
-                let filtered = url.split("&tags")[0]+"&tags="+encodeURI(tags.join("|"));
-                document.location = filtered;
-            }
-            if (!url.match(/&tags/)) {
-                // let part = url.split("?tags")[1]+"?tags="+encodeURI(tags.join("|"));
-                let part = "?tags="+encodeURI(tags.join("|"));
-                let filtered = url.split("?")[0]+part;
-                document.location = filtered;
-            }
-        }else{
-            url = url.split("?")[0];
-            let filtered = url+"?tags="+encodeURI(tags.join("|"));
-            document.location = filtered;
-        }
-        // $("#searched-tags").val(tags.join("|"));
+    // Category search handling
+    function searchCategory() {
+        const category = document.querySelector('#category').value;
+        updateURLParameters({ category: category });
     }
 
     function toggleSidebar(){
@@ -154,10 +88,85 @@ function string2array($string)
     function clearFilter() {
         document.location = document.location.href.split("?")[0];
     }
+
+    // Initialize values from URL parameters on page load
+    $(document).ready(function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Initialize order
+        if (urlParams.has('order')) {
+            document.querySelector('#order').value = urlParams.get('order');
+        }
+        
+        // Initialize range values
+        if (urlParams.has('criteriaMin')) {
+            $('#min-value').val(urlParams.get('criteriaMin'));
+            $('#min-range').val(urlParams.get('criteriaMin'));
+        }
+        
+        if (urlParams.has('criteriaMax')) {
+            $('#max-value').val(urlParams.get('criteriaMax'));
+            $('#max-range').val(urlParams.get('criteriaMax'));
+        }
+        
+        // Initialize tags
+        if (urlParams.has('tags')) {
+            const tags = urlParams.get('tags').split(',');
+            tagsList = tags;
+            document.querySelector('#searched-tags').value = tags.join(',');
+            document.querySelector('input[list="tags-search"]').value = tags.join(', ');
+        }
+        
+        // Initialize category
+        if (urlParams.has('category')) {
+            document.querySelector('#category').value = urlParams.get('category');
+        }
+
+        // Range slider functionality
+        const updateRangeBar = () => {
+            const min = parseInt($('#min-range').val());
+            const max = parseInt($('#max-range').val());
+            $('#range-bar').css({
+                'left': min + '%',
+                'right': (100 - max) + '%'
+            });
+        }
+        
+        // Update range bar
+        updateRangeBar();
+    });
+
+    // Filter handling for ranges
+    function filter(minSelector, maxSelector, key) {
+        const filterType = key.name || 'id';
+        // console.log("Filter key name: " + key.name);
+        // console.log("Element: " + key);
+        // const filterType = key.name || 'id';
+        const minValue = $(minSelector).val();
+        const maxValue = $(maxSelector).val();
+        
+        let filterString = `${filterType}`; // Default filter string
+        updateURLParameters({
+            filter: filterType,
+            criteriaMin: filterString,
+        });
+        updateURLParameters({
+            filter: filterType,
+            criteriaMin: minValue,
+            criteriaMax: maxValue
+        });
+    }
+
+    function templateMatch(data) {
+        updateURLParameters({
+            filter: "template",
+            criteriaMin: data.value
+        });
+    }
     </script>
 
     <main class="flex flex-row flex-wrap w-full box-border gap-4">
-        <aside class="flex flex-col w-56 bg-gray-600 h-screen rounded-r-md" id="sidebar">
+        <aside class="flex flex-col w-56 bg-gray-600 rounded-r-md" id="sidebar">
             <label class="flex flex-col text-black">
                 Order By:
                 <select name="order" id="order" class="rounded-md p-2 m-2 text-black" onchange="order()">
@@ -210,7 +219,7 @@ function string2array($string)
 
             <label class="flex flex-col" id="filter-str-manufacturer">
                 Filter manufacturer:
-                <select id="criteria-str-val-manufcturer" class="rounded-md p-2 m-2">
+                <select id="criteria-str-val-manufcturer" class="rounded-md p-2 m-2" onchange="filter('#criteria-str-val-name', '#criteria-str-val-name', this)" name="manufacturer">
                     <?php if ($manufacturers != null || $manufacturers != "") : ?>
                         <?php foreach ($manufacturers as $manufacturer) : ?>
                             <?php if (array_key_exists("filter", $_GET)) : ?>
@@ -225,7 +234,7 @@ function string2array($string)
 
             <label class="flex flex-col" id="filter-str-name">
                 Filter name:
-                <select id="criteria-str-val-name" class="rounded-md p-2 m-2">
+                <select id="criteria-str-val-name" class="rounded-md p-2 m-2" onchange="filter('#criteria-str-val-name', '#criteria-str-val-name', this)" name="name">
                     <?php if ($names != null || $names != "") : ?>
                         <?php foreach ($names as $name) : ?>
                             <?php if (array_key_exists("filter", $_GET)) : ?>
@@ -245,6 +254,15 @@ function string2array($string)
                 <input type="date" name="criteria" class="rounded-md p-2 m-2 text-black">
                 <!-- <button onclick="filter('#filter-date', '#filter-date')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
+
+            <p>Filter template:</p>
+
+            <?php foreach ($template as $template) : ?>
+                <label class="flex flex-col text-black w-full">
+                    <?= $template ?>
+                    <input type="text" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
+                </label>
+            <?php endforeach; ?>
 
             <button onclick="filter('#criteria-min', '#criteria-max')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button>
 
@@ -290,20 +308,35 @@ function string2array($string)
         <button id="sidebar-button" class="text-center flex justify-center items-center ml-[-0.7rem] mt-[0.3rem] h-4 w-4 p-4 bg-emerald-300 rounded-md" onclick="toggleSidebar()">x</button>
 
         <script onload>
+        // Add event listeners for range inputs to automatically update URL
+        $('#min-range, #max-range').on('change', function() {
+            console.log("Range changed");
+            filter('#min-value', '#max-value');
+        });
+
+        $('#min-value, #max-value').on('change', function() {
+            console.log("Range changed");
+            filter('#min-value', '#max-value');
+        });
+
+        // $("#criteria-str-val-manufcturer").on("change", function() {
+        //     filter('#criteria-str-val-manufcturer', '#criteria-str-val-manufcturer');
+        // })
+
         // $('#filter-num').hide("drop", { direction: "down" }, "slow");
         // $('#filter-str-name').hide("drop", { direction: "down" }, "slow");
         // $("#filter-str-manufacturer").hide("drop", { direction: "down" }, "slow");
         // $('#filter-num-detailed').hide("drop", { direction: "down" }, "slow");
         // $('#filter-date').hide("drop", { direction: "down" }, "slow");
 
-        // if tag text is in tags array change color to bg-emerald-300
-        $("#all-tags").children().each(function() {
-            // console.log("includes: "+ tags.includes($(this).text()));
-            if(tags.includes($(this).text())) {
-                $(this).removeClass("bg-indigo-900");
-                $(this).addClass("bg-lime-800");
-            }
-        });
+        // // if tag text is in tags array change color to bg-emerald-300
+        // $("#all-tags").children().each(function() {
+        //     // console.log("includes: "+ tags.includes($(this).text()));
+        //     if(tags.includes($(this).text())) {
+        //         $(this).removeClass("bg-indigo-900");
+        //         $(this).addClass("bg-lime-800");
+        //     }
+        // });
         </script>
 
         <script>
@@ -358,25 +391,25 @@ function string2array($string)
             $(val).text($(e).val());
         }
 
-        function searchCategory() {
-            let category = $('#category').val();
-            let url = document.location.href;
-            if (url.match(/\?/)) {
-                if (url.match(/&category/)) {
-                    let filtered = url.split("&category")[0]+"&category="+category;
-                    document.location = filtered;
-                }
-                if (!url.match(/&category/)) {
-                    let part = url.split("?")[1]+"&category="+category;
-                    let filtered = url.split("?")[0]+"?"+part;
-                    document.location = filtered;
-                }
-            }else{
-                url = url.split("?")[0];
-                let filtered = url+"?category="+category;
-                document.location = filtered;
-            }
-        }
+        // function searchCategory() {
+        //     let category = $('#category').val();
+        //     let url = document.location.href;
+        //     if (url.match(/\?/)) {
+        //         if (url.match(/&category/)) {
+        //             let filtered = url.split("&category")[0]+"&category="+category;
+        //             document.location = filtered;
+        //         }
+        //         if (!url.match(/&category/)) {
+        //             let part = url.split("?")[1]+"&category="+category;
+        //             let filtered = url.split("?")[0]+"?"+part;
+        //             document.location = filtered;
+        //         }
+        //     }else{
+        //         url = url.split("?")[0];
+        //         let filtered = url+"?category="+category;
+        //         document.location = filtered;
+        //     }
+        // }
         </script>
 
         <div class="flex flex-row flex-wrap gap-4 box-border w-[83%]">

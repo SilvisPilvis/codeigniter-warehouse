@@ -287,60 +287,130 @@
 
         }
 
+        let values;
+
         function getValues() {
-            $.ajax({
-                url: 'http://localhost:8080/template/value-sets',
-                type: "GET",
-                success: function(data) {
-                    console.log(JSON.parse(data));
-                    // return JSON.parse(data);
-                }
-           });
-        }
-
-        let test = $("#product-id").val();
-        templates = getFilledTemplates(test);
-        // console.log("templates: " + templates);
-        let values = getValues();
-
-        function getFields(data) {
-            if(data === undefined){
-                console.error("Category is undefined");
-                return;
-            }
-
-            // this should be category_id
-            let url = 'http://localhost:8080/template/'+data+'/fields'
-            $.ajax({
-                url: url,
-                type: "GET",
-                success: function(data) {
-                    // console.log(JSON.parse(data));
-                    let res = JSON.parse(data);
-                    $("#button").remove();
-                    let i = 0;
-                    res.forEach(item => {
-                        if (item.split(':').length > 2) {
-                            // if the last value is in values array
-                        }
-
-                        const [label, type] = item.split(':');
-                        const cleanType = type.replace(';', '');
-                        // if value is in values array then do the same as bellow but loop trough values and add option
-                        $('#form').append(`
-                            <label class="flex flex-col">${label.charAt(0).toUpperCase() + label.slice(1)}:
-                                <input type="${cleanType}" id="${label}" name="${label}" value="${templates[i]}" class="rounded-md bg-gray-200 text-center">
-                            </label>
-                        `);
-                    i++;
-                    });
-                    $('#form').append(`<button id="button" type="submit" class="bg-emerald-300 rounded-md px-2">Create</button>`);
-                }
+            // Return promise for better async handling
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: 'http://localhost:8080/template/value-sets',
+                    type: "GET",
+                    success: function(data) {
+                        values = JSON.parse(data);
+                        resolve(values);
+                    },
+                    error: function(error) {
+                        reject(error);
+                    }
+                });
             });
         }
 
+        function getFields(data) {
+        if (data === undefined) {
+            console.error("Category is undefined");
+            return;
+        }
+
+        // First ensure we have values
+        getValues()
+            .then(valueData => {
+                values = valueData; // Store values globally
+                
+                // Now proceed with getting fields
+                const url = 'http://localhost:8080/template/' + data + '/fields';
+                
+                $.ajax({
+                    url: url,
+                    type: "GET",
+                    success: function(data) {
+                        let res = JSON.parse(data);
+                        // console.log(res);
+                        $("#button").remove();
+                        let i = 0;
+                        
+                        if(res === undefined){
+                            return;
+                        }
+
+                        res.forEach(item => {
+                            let lastValue;
+                            if (item.split(':').length > 2) {
+                                lastValue = item.split(':')[2];
+                                console.log("Values: " + (lastValue in values));
+                            }
+                            
+                            const [label, type] = item.split(':');
+                            const cleanType = type.replace(';', '');
+                    
+                            // Check if this field should be a select dropdown
+                            if (values && values[lastValue]) {
+                                console.log("should be select");
+                                // Create select element for fields with predefined values
+                                let selectHtml = `
+                                    <label class="flex flex-col">
+                                        ${label.charAt(0).toUpperCase() + label.slice(1)}:
+                                        <select id="${label}" name="${label}" class="rounded-md bg-gray-200 text-center">
+                                `;
+                                
+
+                                console.log("values label: " + values[lastValue]);
+                                // Add options from values
+                                for (const option of values[lastValue]) {
+                                    const selected = templates[i] === option ? 'selected' : '';
+                                    selectHtml += `<option value="${option}" ${selected}>${option}</option>`;
+                                }
+                                
+                                selectHtml += `
+                                        </select>
+                                    </label>
+                                `;
+                                $('#form').append(selectHtml);
+                            } else {
+                                // Regular input field
+                                $('#form').append(`
+                                    <label class="flex flex-col">
+                                        ${label.charAt(0).toUpperCase() + label.slice(1)}:
+                                        <input type="${cleanType}" 
+                                            id="${label}" 
+                                            name="${label}" 
+                                            value="${templates[i] || ''}" 
+                                            class="rounded-md bg-gray-200 text-center">
+                                    </label>
+                                `);
+                            }
+                            i++;
+                        });
+                        
+                        $('#form').append(`
+                            <button id="button" 
+                                    type="submit" 
+                                    class="bg-emerald-300 rounded-md px-2">Create</button>
+                        `);
+                    },
+                    error: function(error) {
+                        console.error("Error fetching fields:", error);
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Error fetching values:", error);
+            });
+        }
+
+        async function init() {
+            const test = $("#product-id").val();
+            templates = getFilledTemplates(test); // Assuming this function exists
+            try {
+                await getFields(test);
+            } catch (error) {
+                console.error("Error initializing fields:", error);
+            }
+        }
+
         $(document).ready(function() {
-            getFields($("#category").val());
+            // getFields($("#category").val());
+            init();
         });
 
         if($("#category").val()) {

@@ -90,3 +90,5 @@ $routes->post('/template/(:num)/edit', 'Templatefields::update/$1');
 $routes->get('/template/(:num)/fields', 'Templatefields::getFields/$1');
 
 $routes->get('/template/value-sets', 'Templatefields::getValues');
+
+$routes->get('/template/all-fields', 'Templatefields::getAllFields');

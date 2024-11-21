@@ -10,10 +10,13 @@ class Product extends BaseController
     {
         $order = $this->request->getGet('order') ?? "id";
         $filter = $this->request->getGet('filter') ?? "id >";
-        $criteriaMin = $this->request->getGet('criteriaMin') ?? "0";
-        $criteriaMax = $this->request->getGet('criteriaMax') ?? "0";
+        $criteriaMin = $this->request->getGet('criteriaMin') ?? "";
+        $criteriaMax = $this->request->getGet('criteriaMax') ?? "";
         $tags = $this->request->getGet('tags') ?? "";
         $categories = $this->request->getGet('category') ?? "";
+        $template = $this->request->getGet('template') ?? "";
+
+        echo "Order: ".$order." Filter: ".$filter." Critmin: ".$criteriaMin." Critmax: ".$criteriaMax." Tags: ".$tags." Categories: ".$categories;
 
         switch ($filter) {
             case "id":
@@ -27,9 +30,18 @@ class Product extends BaseController
                 break;
             case "name":
                 $filter = $filter." = '".$criteriaMin."'";
+                $criteriaMax = "";
+                $criteriaMin = "";
                 break;
             case "manufacturer":
                 $filter = "metadata->>'manufacturer' = "."'".$criteriaMin."'";
+                $criteriaMax = "";
+                $criteriaMin = "";
+                break;
+            case "template":
+                $filter = "metadata->>'template' ILIKE "."'%".$criteriaMin."%'";
+                $criteriaMax = "";
+                $criteriaMin = "";
                 break;
             default:
                 $filter = "id > 0";
@@ -54,8 +66,6 @@ class Product extends BaseController
             }
             $filter .= "category_id::text LIKE '%" . $categories . "%'";
         }
-
-        //$filter = `(metadata->>'tags')::jsonb @> '[${filter}]'`;
 
         $productModel = new \App\Models\ProductModel();
         $data['products'] = $productModel
@@ -87,6 +97,16 @@ class Product extends BaseController
         }
         $data['tags'] = $allTags;
         // --- end all tags
+
+        $template = new \App\Models\TemplatefieldsModel();
+        $fields = $template->query("SELECT template FROM category_template;")->getResult();
+
+        foreach ($fields as $field) {
+            $result[] = array_keys(json_decode($field->template, true));
+        }
+
+        $result = array_merge(...$result);
+        $data['template'] = array_unique($result);
 
         return view('product_show', $data);
     }
