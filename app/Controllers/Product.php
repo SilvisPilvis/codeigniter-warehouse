@@ -16,7 +16,7 @@ class Product extends BaseController
         $categories = $this->request->getGet('category') ?? "";
         $template = $this->request->getGet('template') ?? "";
 
-        echo "Order: ".$order." Filter: ".$filter." Critmin: ".$criteriaMin." Critmax: ".$criteriaMax." Tags: ".$tags." Categories: ".$categories;
+        // echo "Order: ".$order." Filter: ".$filter." Critmin: ".$criteriaMin." Critmax: ".$criteriaMax." Tags: ".$tags." Categories: ".$categories;
 
         switch ($filter) {
             case "id":
@@ -98,6 +98,7 @@ class Product extends BaseController
         $data['tags'] = $allTags;
         // --- end all tags
 
+        // --- get all template fields
         $template = new \App\Models\TemplatefieldsModel();
         $fields = $template->query("SELECT template FROM category_template;")->getResult();
 
@@ -107,6 +108,25 @@ class Product extends BaseController
 
         $result = array_merge(...$result);
         $data['template'] = array_unique($result);
+        // --- end all template fields
+
+        // --- template field types
+        $fields = $template->query("SELECT template FROM category_template;")->getResult();
+
+        foreach ($fields as $field) {
+            $res[] = array_values(json_decode($field->template, true));
+        }
+
+        $res = array_merge(...$res);
+        // print_r($result);
+        $temp = [];
+        foreach ($res as $r) {
+            $temp[] = explode(':', $r)[0];
+        }
+
+        $data['template_values'] = array_unique($temp);
+
+        // --- end template field types
 
         return view('product_show', $data);
     }

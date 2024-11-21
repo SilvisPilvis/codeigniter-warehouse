@@ -1,5 +1,4 @@
 <label class="flex flex-col text-black" id="filter-num">
-   <p class="font-medium">Filter Id:</p>
    <div class="relative mt-4 m-4">
        <div class="flex flex-row justify-between mb-4">
            <div class="flex items-center">

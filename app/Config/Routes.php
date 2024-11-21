@@ -92,3 +92,5 @@ $routes->get('/template/(:num)/fields', 'Templatefields::getFields/$1');
 $routes->get('/template/value-sets', 'Templatefields::getValues');
 
 $routes->get('/template/all-fields', 'Templatefields::getAllFields');
+
+$routes->get('/template/field-types', 'Templatefields::getFieldTypes');

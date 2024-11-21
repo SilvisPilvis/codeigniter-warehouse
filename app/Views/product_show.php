@@ -166,7 +166,7 @@ function string2array($string)
     </script>
 
     <main class="flex flex-row flex-wrap w-full box-border gap-4">
-        <aside class="flex flex-col w-56 bg-gray-600 rounded-r-md" id="sidebar">
+        <aside class="flex flex-col w-56 bg-gray-600 rounded-r-md min-h-screen" id="sidebar">
             <label class="flex flex-col text-black">
                 Order By:
                 <select name="order" id="order" class="rounded-md p-2 m-2 text-black" onchange="order()">
@@ -184,41 +184,25 @@ function string2array($string)
                 </select>
             </label>
 
-            <label class="flex flex-col text-black w-full" id="filter-num">
-                <!-- <p>Filter Id:</p>
-                <p>Min:</p>
-                <div class="flex flex-row gap-2">
-                    <input type="range" min="1" max="100" step="1" value="0" id="criteria-min" oninput="changeVal('#criteria-min-val', this)">
-                    <p id="criteria-min-val" class="text-white">0</p>
-                </div>
-
-                <p>Max:</p>
-                <div class="flex flex-row gap-2">
-                    <input type="range" min="0" max="100" step="1" value="10" id="criteria-max" oninput="changeVal('#criteria-max-val', this)">
-                    <p id="criteria-max-val" class="text-white">10</p>
-                </div> -->
-                <!-- <button onclick="filter('#criteria-min', '#criteria-max')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
-                 <?php include_once "doubleslider.php"; ?>
-            </label>
-
+            <details>
+            <summary>Filter Id:</summary>
+                 <label class="flex flex-col text-black w-full" id="filter-num">
+                    <!-- <button onclick="filter('#criteria-min', '#criteria-max')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
+                    <?php include_once "doubleslider.php"; ?>
+                 </label>
+            </details>
+            
+            <details>
+            <summary>Filter Size:</summary>
             <label class="flex flex-col text-black w-full" id="filter-num-detailed">
                 <?php include_once "detailed-slider.php"; ?>
-                <!-- <p>Filter Size:</p>
-                <p>Min:</p>
-                <div class="flex flex-row gap-2">
-                    <input type="range" min="0" max="1000" step="0.01" value="0.1" id="criteria-min" oninput="changeVal('#criteria-min-val', this)">
-                    <p id="criteria-min-val" class="text-white">0</p>
-                </div>
-                <p>Max:</p>
-                <div class="flex flex-row gap-2">
-                    <input type="range" min="0" max="10000" step="0.01" value="1000" id="criteria-max" oninput="changeVal('#criteria-max-val', this)">
-                    <p id="criteria-max-val" class="text-white">10</p>
-                </div> -->
-                <!-- <button onclick="filter('#criteria-min-val', '#criteria-max-val')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
+            </details>
+            
 
+            <details>
+            <summary>Filter Manufacturer:</summary>
             <label class="flex flex-col" id="filter-str-manufacturer">
-                Filter manufacturer:
                 <select id="criteria-str-val-manufcturer" class="rounded-md p-2 m-2" onchange="filter('#criteria-str-val-name', '#criteria-str-val-name', this)" name="manufacturer">
                     <?php if ($manufacturers != null || $manufacturers != "") : ?>
                         <?php foreach ($manufacturers as $manufacturer) : ?>
@@ -231,9 +215,11 @@ function string2array($string)
                 </select>
                 <!-- <button onclick="filter('#criteria-str-val-manufcturer', '#criteria-str-val-manufcturer')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
+            </details>
 
+            <details>
+            <summary>Filter Name:</summary>
             <label class="flex flex-col" id="filter-str-name">
-                Filter name:
                 <select id="criteria-str-val-name" class="rounded-md p-2 m-2" onchange="filter('#criteria-str-val-name', '#criteria-str-val-name', this)" name="name">
                     <?php if ($names != null || $names != "") : ?>
                         <?php foreach ($names as $name) : ?>
@@ -248,20 +234,26 @@ function string2array($string)
                 </select>
                 <!-- <button onclick="filter('#criteria-str-val-name', '#criteria-str-val-name')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
+            </details>
 
+            <details>
+            <summary>Filter Date:</summary>
             <label class="flex flex-col text-black w-full" id="filter-date">
                 Filter date:
                 <input type="date" name="criteria" class="rounded-md p-2 m-2 text-black">
                 <!-- <button onclick="filter('#filter-date', '#filter-date')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
+            </details>
 
             <p>Filter template:</p>
 
-            <?php foreach ($template as $template) : ?>
+            <?php foreach ($template as $key => $template) : ?>
+                <details>
+                <summary><?= $template ?></summary>
                 <label class="flex flex-col text-black w-full">
-                    <?= $template ?>
-                    <input type="text" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
+                        <input type="<?= $template_values[$key] ?>" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
                 </label>
+                </details>
             <?php endforeach; ?>
 
             <button onclick="filter('#criteria-min', '#criteria-max')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button>

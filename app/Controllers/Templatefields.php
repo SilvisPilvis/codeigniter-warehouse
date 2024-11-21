@@ -223,7 +223,33 @@ class Templatefields extends BaseController
         return $result;
     }
 
+    public function getFieldTypes()
+    {
+        $template = new \App\Models\TemplatefieldsModel();
+        $fields = $template->query("SELECT template FROM category_template;")->getResult();
+
+        foreach ($fields as $field) {
+            $result[] = array_values(json_decode($field->template, true));
+        }
+
+        $result = array_merge(...$result);
+        // print_r($result);
+        $temp = [];
+        foreach ($result as $res) {
+            $temp[] = explode(':', $res)[0];
+        }
+
+        print_r(array_unique($temp));
+        // $result = array_merge(...$result);
+        // print_r(array_unique($result));
+        return $result;
+    }
 }
+
+// function split($var)
+// {
+//     return explode(':', $var)[0];
+// }
 
 function processArray(array $input): array
 {
