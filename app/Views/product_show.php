@@ -250,16 +250,22 @@ function string2array($string)
                 <details>
                 <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>"><?= $template ?></summary>
                 <label class="flex flex-col text-black w-full">
+                        <?php $value_sets = (array)$value_sets; ?>
                         <?php if ($template_values[$key] == "select") : ?>
                             <select onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
-                                <?php foreach ($value_sets->colors as $value_set) : ?>
+                                <option value="">None</option>
+                                <?php foreach ($value_sets[$padded[$key]] as $value_set) : ?>
                                     <option value="<?= $value_set ?>"><?= $value_set ?></option>
                                 <?php endforeach; ?>
                             </select>
                         <?php elseif ($template_values[$key] == "radio") : ?>
-                            <input type="radio" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
+                            <?php foreach ($value_sets[$padded[$key]] as $value_set) : ?>
+                                <input type="radio" value="<?= $value_set ?>" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
+                            <?php endforeach; ?>
                         <?php elseif ($template_values[$key] == "checkbox") : ?>
-                            <input type="checkbox" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
+                            <?php foreach ($value_sets[$padded[$key]] as $value_set) : ?>
+                                <input type="checkbox" value="<?= $value_set ?>" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
+                            <?php endforeach; ?>
                         <?php else : ?>
                         <input type="<?= $template_values[$key] ?>" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
                         <?php endif; ?>
