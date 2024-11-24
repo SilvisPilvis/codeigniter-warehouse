@@ -2,6 +2,23 @@
 
 namespace App\Controllers;
 
+function consolidateArrayAllArrays($inputArray)
+{
+    $result = [];
+
+    foreach ($inputArray as $item) {
+        foreach ($item as $key => $value) {
+            if (!isset($result[$key])) {
+                $result[$key] = [$value];  // Always start with an array
+            } elseif (!in_array($value, $result[$key])) {
+                $result[$key][] = $value;
+            }
+        }
+    }
+
+    return $result;
+}
+
 class Product extends BaseController
 {
     protected $helpers = ['form'];
@@ -161,6 +178,13 @@ class Product extends BaseController
         // $data['template_values'] = get_object_vars($temp);
 
         // --- end template field types
+        $data['test'] = $template->query("SELECT metadata->>'template' template FROM product WHERE metadata->>'template' IS NOT NULL;")->getResult();
+        foreach ($data['test'] as $key => $value) {
+            $tmp = (array)$value;
+            $data['test'][$key] = json_decode($tmp['template'], true);
+        }
+        $data['test'] = consolidateArrayAllArrays($data['test']);
+        // $data['test'] = array_merge(...$data['test']);
         // --- template field values
         $values = $template->query("SELECT value_sets FROM template_values;")->getResult();
         $data['value_sets'] = json_decode($values[0]->value_sets);

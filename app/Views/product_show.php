@@ -164,7 +164,7 @@ function string2array($string)
         });
     }
     </script>
-
+        
     <main class="flex flex-row flex-wrap w-full box-border gap-4">
         <aside class="flex flex-col w-56 bg-gray-600 rounded-r-md min-h-screen" id="sidebar">
             <label class="flex flex-col text-black">
@@ -203,16 +203,14 @@ function string2array($string)
             <details>
             <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Manufacturer:</summary>
             <label class="flex flex-col" id="filter-str-manufacturer">
-                <select id="criteria-str-val-manufcturer" class="rounded-md p-2 m-2" onchange="filter('#criteria-str-val-name', '#criteria-str-val-name', this)" name="manufacturer">
-                    <?php if ($manufacturers != null || $manufacturers != "") : ?>
-                        <?php foreach ($manufacturers as $manufacturer) : ?>
-                            <?php if (array_key_exists("filter", $_GET)) : ?>
-                                <option value=""><?= $_GET["filter"] ?></option>
-                            <?php endif; ?>
-                            <option value="<?= $manufacturer->name ?>"><?= $manufacturer->name ?></option>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </select>
+                <?php if ($manufacturers != null || $manufacturers != "") : ?>
+                <?php foreach ($manufacturers as $manufacturer) : ?>
+                    <label class="flex flex-row-reverse text-black w-full p-4 justify-end gap-2">
+                        <?= $manufacturer->name ?>
+                        <input type="checkbox" value="<?= $manufacturer->name ?>" onchange="templateMatch(this)" name="template" class="w-6 h-6 text-black rounded-md">
+                    </label>
+                <?php endforeach; ?>
+                <?php endif; ?>
                 <!-- <button onclick="filter('#criteria-str-val-manufcturer', '#criteria-str-val-manufcturer')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
             </details>
@@ -220,18 +218,16 @@ function string2array($string)
             <details>
             <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Name:</summary>
             <label class="flex flex-col" id="filter-str-name">
-                <select id="criteria-str-val-name" class="rounded-md p-2 m-2" onchange="filter('#criteria-str-val-name', '#criteria-str-val-name', this)" name="name">
-                    <?php if ($names != null || $names != "") : ?>
-                        <?php foreach ($names as $name) : ?>
-                            <?php if (array_key_exists("filter", $_GET)) : ?>
-                                <option value=""><?= $_GET["filter"] ?></option>
-                            <?php endif; ?>
-                            <option value="<?= $name->name ?>"><?= $name->name ?></option>
-                        <?php endforeach; ?>
-                    <?php else : ?>
-                        <option value="">No product names found</option>
-                    <?php endif; ?>
-                </select>
+                <?php if ($names != null || $names != "") : ?>
+                    <?php foreach ($names as $name) : ?>
+                        <label class="flex flex-row-reverse text-black w-full p-4 justify-end gap-2">
+                            <?= $name->name ?>
+                            <input type="checkbox" value="<?= $name->name ?>" onchange="templateMatch(this)" name="template" class="w-6 h-6 text-black rounded-md">
+                        </label>
+                    <?php endforeach; ?>
+                <?php else : ?>
+                    <option value="">No product names found</option>
+                <?php endif; ?>
                 <!-- <button onclick="filter('#criteria-str-val-name', '#criteria-str-val-name')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
             </details>
@@ -246,31 +242,16 @@ function string2array($string)
 
             <p>Filter template:</p>
 
-            <?php foreach ($template as $key => $template) : ?>
-                <details>
-                <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>"><?= $template ?></summary>
-                <label class="flex flex-col text-black w-full">
-                        <?php $value_sets = (array)$value_sets; ?>
-                        <?php if ($template_values[$key] == "select") : ?>
-                            <select onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
-                                <option value="">None</option>
-                                <?php foreach ($value_sets[$padded[$key]] as $value_set) : ?>
-                                    <option value="<?= $value_set ?>"><?= $value_set ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        <?php elseif ($template_values[$key] == "radio") : ?>
-                            <?php foreach ($value_sets[$padded[$key]] as $value_set) : ?>
-                                <input type="radio" value="<?= $value_set ?>" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
-                            <?php endforeach; ?>
-                        <?php elseif ($template_values[$key] == "checkbox") : ?>
-                            <?php foreach ($value_sets[$padded[$key]] as $value_set) : ?>
-                                <input type="checkbox" value="<?= $value_set ?>" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
-                            <?php endforeach; ?>
-                        <?php else : ?>
-                        <input type="<?= $template_values[$key] ?>" onchange="templateMatch(this)" name="template" class="rounded-md p-2 m-2 text-black">
-                        <?php endif; ?>
-                </label>
-                </details>
+            <?php foreach($test as $key => $value) : ?>
+            <details>
+                <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>"><?= $key ?></summary>
+                <?php for($i = 0; $i < count($value); $i++) : ?>
+                    <label class="flex flex-row-reverse text-black w-full p-4 justify-end gap-2">
+                        <?= $value[$i] ?>
+                        <input type="checkbox" value="<?= $value[$i] ?>" onchange="templateMatch(this)" name="template" class="w-6 h-6 text-black rounded-md">
+                    </label>
+                <?php endfor; ?>
+            </details>
             <?php endforeach; ?>
 
             <button onclick="filter('#criteria-min', '#criteria-max')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button>
