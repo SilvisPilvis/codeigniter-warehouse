@@ -61,6 +61,8 @@ $routes->post("/product/(:num)/images/(:any)", 'Product::deleteSingleImage/$1/$2
 
 $routes->get('/product/(:num)/template', 'Product::getTemplateValues/$1');
 
+$routes->get('/product/date', 'Product::getProductDate');
+
 // WarehouseProduct routes
 
 $routes->get('warehouse/(:num)/product', 'WarehouseProduct::index/$1');

@@ -31,16 +31,43 @@ function string2array($string)
     <?php endif; ?>
 
     <script>
+    // function updateURLParameters(params) {
+    //     const url = new URL(window.location.href);
+    //     Object.keys(params).forEach(key => {
+    //         if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+    //             url.searchParams.set(key, params[key]);
+    //         }
+    //     });
+    //     window.history.replaceState({}, '', url);
+    //     // Optionally reload the page or fetch new data
+    //     window.location.href = url;
+    // }
+
     function updateURLParameters(params) {
         const url = new URL(window.location.href);
+        
         Object.keys(params).forEach(key => {
             if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
-                url.searchParams.set(key, params[key]);
+                const existingValue = url.searchParams.get(key);
+                
+                if (existingValue) {
+                    // Check if the new value is already in the existing values
+                    const existingValues = existingValue.split('|');
+                    if (!existingValues.includes(params[key])) {
+                        // Append new value with | if it doesn't exist
+                        url.searchParams.set(key, `${existingValue}|${params[key]}`);
+                    }
+                } else {
+                    // Set new value if parameter doesn't exist
+                    url.searchParams.set(key, params[key]);
+                }
             }
         });
+
         window.history.replaceState({}, '', url);
-        // Optionally reload the page or fetch new data
+        // Changed from direct reload to optional callback
         window.location.href = url;
+        // return url.toString();
     }
 
     // Order handling
@@ -158,10 +185,12 @@ function string2array($string)
     }
 
     function templateMatch(data) {
-        updateURLParameters({
-            filter: "template",
-            criteriaMin: data.value
-        });
+        let name = data.name;
+        const params = {
+            filter: name
+        };
+        params[data.name] = data.value;
+        updateURLParameters(params);
     }
     </script>
         
@@ -207,7 +236,7 @@ function string2array($string)
                 <?php foreach ($manufacturers as $manufacturer) : ?>
                     <label class="flex flex-row-reverse text-black w-full p-4 justify-end gap-2">
                         <?= $manufacturer->name ?>
-                        <input type="checkbox" value="<?= $manufacturer->name ?>" onchange="templateMatch(this)" name="template" class="w-6 h-6 text-black rounded-md">
+                        <input type="checkbox" value="<?= $manufacturer->name ?>" onchange="templateMatch(this)" name="manufacturer" class="w-6 h-6 text-black rounded-md">
                     </label>
                 <?php endforeach; ?>
                 <?php endif; ?>
@@ -222,7 +251,7 @@ function string2array($string)
                     <?php foreach ($names as $name) : ?>
                         <label class="flex flex-row-reverse text-black w-full p-4 justify-end gap-2">
                             <?= $name->name ?>
-                            <input type="checkbox" value="<?= $name->name ?>" onchange="templateMatch(this)" name="template" class="w-6 h-6 text-black rounded-md">
+                            <input type="checkbox" value="<?= $name->name ?>" onchange="templateMatch(this)" name="name" class="w-6 h-6 text-black rounded-md">
                         </label>
                     <?php endforeach; ?>
                 <?php else : ?>
@@ -233,9 +262,15 @@ function string2array($string)
             </details>
 
             <details>
-            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Date:</summary>
+            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Date Created:</summary>
             <label class="flex flex-col text-black w-full" id="filter-date">
-                <input type="date" name="criteria" class="rounded-md p-2 m-2 text-black">
+                <!-- <input type="date" name="criteria" class="rounded-md p-2 m-2 text-black"> -->
+                <?php foreach ($dates as $date) : ?>
+                <label class="flex flex-row-reverse text-black w-full p-4 justify-end gap-2">
+                    <?= $date ?>
+                    <input type="checkbox" value="<?= $date ?>" onchange="templateMatch(this)" name="date" class="w-6 h-6 text-black rounded-md">
+                </label>
+                <?php endforeach; ?>
                 <!-- <button onclick="filter('#filter-date', '#filter-date')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
             </details>
@@ -254,6 +289,7 @@ function string2array($string)
             </details>
             <?php endforeach; ?>
 
+            <button class="bg-emerald-300 rounded-md p-2 m-2" onclick="clearFilter()">Clear</button>
             <button onclick="filter('#criteria-min', '#criteria-max')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button>
 
             <div class="flex flex-row flex-wrap gap-2 m-2" id="all-tags">
@@ -290,8 +326,6 @@ function string2array($string)
                     </select>
                 <?php endif; ?>
             </label>
-
-            <button class="bg-emerald-300 rounded-md p-2 m-2" onclick="clearFilter()">Clear</button>
 
         </aside>
 

@@ -2,6 +2,119 @@
 
 namespace App\Controllers;
 
+class FilterQueryBuilder {
+    private $conditions = [];
+    private $queryParts = [];
+
+    public function buildFilter($params) {
+        $order = $params['order'] ?? 'id';
+        $filters = $this->parseFilters($params);
+        
+        foreach ($filters as $filterType => $values) {
+            if (empty($values)) continue;
+            
+            $subConditions = [];
+            
+            switch ($filterType) {
+                case 'id':
+                    foreach ($values as $range) {
+                        list($min, $max) = explode('|', $range . '|' . $range);
+                        $subConditions[] = "id BETWEEN {$min} AND {$max}";
+                    }
+                    break;
+
+                case 'weight':
+                case 'size':
+                    foreach ($values as $range) {
+                        list($min, $max) = explode('|', $range . '|' . $range);
+                        $subConditions[] = "metadata->>'$filterType' BETWEEN '$min' AND '$max'";
+                    }
+                    break;
+
+                case 'name':
+                    foreach ($values as $value) {
+                        $subConditions[] = "name = '$value'";
+                    }
+                    break;
+
+                case 'manufacturer':
+                    foreach ($values as $value) {
+                        $subConditions[] = "metadata->>'manufacturer' = '$value'";
+                    }
+                    break;
+
+                case 'template':
+                    foreach ($values as $value) {
+                        $subConditions[] = "metadata->>'template' ILIKE '%$value%'";
+                    }
+                    break;
+
+                case 'tags':
+                    foreach ($values as $tag) {
+                        $subConditions[] = "(metadata->>'tags')::jsonb @> '[\"$tag\"]'";
+                    }
+                    break;
+
+                case 'category':
+                    foreach ($values as $category) {
+                        $subConditions[] = "category_id::text LIKE '%$category%'";
+                    }
+                    break;
+
+                case 'date':
+                    foreach ($values as $date) {
+                        $subConditions[] = "product.created_at::date = '$date'::date";
+                    }
+                    break;
+            }
+            
+            if (!empty($subConditions)) {
+                // Join same-type conditions with OR
+                $this->queryParts[] = '(' . implode(' OR ', $subConditions) . ')';
+            }
+        }
+
+        // Join different filter types with AND
+        return empty($this->queryParts) ? 'id > 0' : implode(' AND ', $this->queryParts);
+    }
+
+    private function parseFilters($params) {
+        $filters = [];
+        
+        // Parse each filter type
+        if (!empty($params['id'])) {
+            $filters['id'] = explode('|', $params['id']);
+        }
+        if (!empty($params['weight'])) {
+            $filters['weight'] = explode('|', $params['weight']);
+        }
+        if (!empty($params['size'])) {
+            $filters['size'] = explode('|', $params['size']);
+        }
+        if (!empty($params['name'])) {
+            $filters['name'] = explode('|', $params['name']);
+        }
+        if (!empty($params['manufacturer'])) {
+            $filters['manufacturer'] = explode('|', $params['manufacturer']);
+        }
+        if (!empty($params['template'])) {
+            $filters['template'] = explode('|', $params['template']);
+        }
+        if (!empty($params['tags'])) {
+            $filters['tags'] = explode('|', $params['tags']);
+        }
+        if (!empty($params['category'])) {
+            $filters['category'] = explode('|', $params['category']);
+        }
+        if (!empty($params['date'])) {
+            $filters['date'] = explode('|', $params['date']);
+        }
+        
+        return $filters;
+    }
+
+}
+
 function consolidateArrayAllArrays($inputArray)
 {
     $result = [];
@@ -32,57 +145,82 @@ class Product extends BaseController
         $tags = $this->request->getGet('tags') ?? "";
         $categories = $this->request->getGet('category') ?? "";
         $template = $this->request->getGet('template') ?? "";
+        $dateCreated = $this->request->getGet('date') ?? "";
+        $weight = $this->request->getGet('weight') ?? "";
+        $size = $this->request->getGet('size') ?? "";
+        $name = $this->request->getGet('name') ?? "";
+        $manufacturer = $this->request->getGet('manufacturer') ?? "";
 
-        // echo "Order: ".$order." Filter: ".$filter." Critmin: ".$criteriaMin." Critmax: ".$criteriaMax." Tags: ".$tags." Categories: ".$categories;
+        $params = [
+            'order' => $order,
+            'id' => $criteriaMin && $criteriaMax ? 
+            $criteriaMin . '|' . $criteriaMax : '',
+            'filter' => $filter ?? 'id >',
+            'weight' => $weight,
+            'size' => $size,
+            'name' => $name,
+            'manufacturer' => $manufacturer,
+            'template' => $template,
+            'tags' => $tags,
+            'category' => $categories,
+            'date' => $dateCreated,
+            // $criteriaMin,
+            // $criteriaMax,
+        ];
 
-        switch ($filter) {
-            case "id":
-                $filter = "id BETWEEN ".$criteriaMin." AND ".$criteriaMax;
-                break;
-            case "weight":
-                $filter = "metadata->>'weight' BETWEEN '".$criteriaMin."' AND '".$criteriaMax."'";
-                break;
-            case "size":
-                $filter = "metadata->>'size' BETWEEN '".$criteriaMin."' AND '".$criteriaMax."'";
-                break;
-            case "name":
-                $filter = $filter." = '".$criteriaMin."'";
-                $criteriaMax = "";
-                $criteriaMin = "";
-                break;
-            case "manufacturer":
-                $filter = "metadata->>'manufacturer' = "."'".$criteriaMin."'";
-                $criteriaMax = "";
-                $criteriaMin = "";
-                break;
-            case "template":
-                $filter = "metadata->>'template' ILIKE "."'%".$criteriaMin."%'";
-                $criteriaMax = "";
-                $criteriaMin = "";
-                break;
-            default:
-                $filter = "id > 0";
-                break;
-        }
+        $filterBuilder = new FilterQueryBuilder();
+        $filter = $filterBuilder->buildFilter($params);
 
-        if ($tags) {
-            $filter = "";
-            foreach (explode("|", $tags) as $index => $tag) {
-                if ($index === 0) {
-                    $filter = "(metadata->>'tags')::jsonb @> '[\"" . $tag . "\"]'";
-                } else {
-                    $filter .= " AND (metadata->>'tags')::jsonb @> '[\"" . $tag . "\"]'";
-                }
-            }
-        }
+        // switch ($filter) {
+        //     case "id":
+        //         $filter = "id BETWEEN ".$criteriaMin." AND ".$criteriaMax;
+        //         break;
+        //     case "weight":
+        //         $filter = "metadata->>'weight' BETWEEN '".$criteriaMin."' AND '".$criteriaMax."'";
+        //         break;
+        //     case "size":
+        //         $filter = "metadata->>'size' BETWEEN '".$criteriaMin."' AND '".$criteriaMax."'";
+        //         break;
+        //     case "name":
+        //         $filter = $filter." = '".$criteriaMin."'";
+        //         $criteriaMax = "";
+        //         $criteriaMin = "";
+        //         break;
+        //     case "manufacturer":
+        //         $filter = "metadata->>'manufacturer' = "."'".$criteriaMin."'";
+        //         $criteriaMax = "";
+        //         $criteriaMin = "";
+        //         break;
+        //     case "template":
+        //         $filter = "metadata->>'template' ILIKE "."'%".$criteriaMin."%'";
+        //         $criteriaMax = "";
+        //         $criteriaMin = "";
+        //         break;
+        //     default:
+        //         $filter = "id > 0";
+        //         break;
+        // }
 
-        // Add category search
-        if ($categories) {
-            if ($filter) {
-                $filter .= " AND ";
-            }
-            $filter .= "category_id::text LIKE '%" . $categories . "%'";
-        }
+        // if ($tags) {
+        //     $filter = "";
+        //     foreach (explode("|", $tags) as $index => $tag) {
+        //         if ($index === 0) {
+        //             $filter = "(metadata->>'tags')::jsonb @> '[\"" . $tag . "\"]'";
+        //         } else {
+        //             $filter .= " AND (metadata->>'tags')::jsonb @> '[\"" . $tag . "\"]'";
+        //         }
+        //     }
+        // }
+
+        // // Add category search
+        // if ($categories) {
+        //     if ($filter) {
+        //         $filter .= " AND ";
+        //     }
+        //     $filter .= "category_id::text LIKE '%" . $categories . "%'";
+        // }
+
+        // echo $filter;
 
         $productModel = new \App\Models\ProductModel();
         $data['products'] = $productModel
@@ -190,6 +328,26 @@ class Product extends BaseController
         $data['value_sets'] = json_decode($values[0]->value_sets);
         // --- end template field values
         // padded values if not select or checkbox or radio then pad array with 0
+
+        // --- get all product dates
+        $dates = $productModel->query("SELECT
+        product.created_at
+            FROM product")->getResult();
+        $data['dates'] = [];
+        foreach ($dates as $key => $value) {
+            array_push($data['dates'], $value->created_at);
+            // $data['dates'] = $value->created_at;
+        }
+        // remove duplicates and convert to date format
+        $data['dates'] = array_unique(
+            array_map(
+                function ($date) {
+                    return date('Y-m-d', strtotime($date));
+                },
+                $data['dates']
+            )
+        );
+        // --- end get all product dates
 
         return view('product_show', $data);
     }
@@ -516,6 +674,19 @@ class Product extends BaseController
                 'message' => $product->name . ' has been created'
             ]);
         }
+    }
+
+    public function getProductDate()
+    {
+        $productModel = new \App\Models\ProductModel();
+        $data['products'] = $productModel->query("SELECT
+        product.created_at
+            FROM product")->getResult();
+        $res = [];
+        foreach ($data['products'] as $key => $value) {
+            $res[] = $value->created_at;
+        }
+        print_r($res);
     }
 
     public function getTemplateValues(int $id)
