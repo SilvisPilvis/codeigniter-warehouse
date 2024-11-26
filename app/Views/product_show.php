@@ -49,7 +49,11 @@ function string2array($string)
         Object.keys(params).forEach(key => {
             if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
                 const existingValue = url.searchParams.get(key);
-                
+
+                if(existingValue === params[key]){
+                    console.error(`${params[key]} is already in url`)
+                }
+
                 if (existingValue) {
                     // Check if the new value is already in the existing values
                     const existingValues = existingValue.split('|');
@@ -196,6 +200,7 @@ function string2array($string)
         
     <main class="flex flex-row flex-wrap w-full box-border gap-4">
         <aside class="flex flex-col w-56 bg-gray-600 rounded-r-md min-h-screen" id="sidebar">
+        <?= print_r($params) ?>
             <label class="flex flex-col text-black">
                 Order By:
                 <select name="order" id="order" class="rounded-md p-2 m-2 text-black" onchange="order()">
@@ -214,7 +219,7 @@ function string2array($string)
             </label>
 
             <details>
-                    <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Id:</summary>
+                <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Id [<?= $availible['id'] ?>]:</summary>
                  <label class="flex flex-col text-black w-full" id="filter-num">
                     <!-- <button onclick="filter('#criteria-min', '#criteria-max')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
                     <?php include_once "doubleslider.php"; ?>
@@ -222,7 +227,7 @@ function string2array($string)
             </details>
             
             <details>
-            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Size:</summary>
+            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Size [<?= $availible['size'] ?>]:</summary>
             <label class="flex flex-col text-black w-full" id="filter-num-detailed">
                 <?php include_once "detailed-slider.php"; ?>
             </label>
@@ -230,7 +235,7 @@ function string2array($string)
             
 
             <details>
-            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Manufacturer:</summary>
+            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Manufacturer [<?= $availible['manufacturer'] ?>]:</summary>
             <label class="flex flex-col" id="filter-str-manufacturer">
                 <?php if ($manufacturers != null || $manufacturers != "") : ?>
                 <?php foreach ($manufacturers as $manufacturer) : ?>
@@ -245,7 +250,7 @@ function string2array($string)
             </details>
 
             <details>
-            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Name:</summary>
+            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Name [<?= $availible['name'] ?>]:</summary>
             <label class="flex flex-col" id="filter-str-name">
                 <?php if ($names != null || $names != "") : ?>
                     <?php foreach ($names as $name) : ?>
@@ -262,7 +267,7 @@ function string2array($string)
             </details>
 
             <details>
-            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Date Created:</summary>
+            <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Date Created [<?= $availible['created_at'] ?>]:</summary>
             <label class="flex flex-col text-black w-full" id="filter-date">
                 <!-- <input type="date" name="criteria" class="rounded-md p-2 m-2 text-black"> -->
                 <?php foreach ($dates as $date) : ?>
@@ -279,7 +284,7 @@ function string2array($string)
 
             <?php foreach($test as $key => $value) : ?>
             <details>
-                <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>"><?= $key ?></summary>
+                <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>"><?= $key." [".$availible[$key]."]" ?></summary>
                 <?php for($i = 0; $i < count($value); $i++) : ?>
                     <label class="flex flex-row-reverse text-black w-full p-4 justify-end gap-2">
                         <?= $value[$i] ?>
@@ -307,7 +312,7 @@ function string2array($string)
                         <option value="<?= $tag ?>"><?= $tag ?></option>
                     <?php endforeach; ?>
                 </datalist>
-                <button onclick="tagsSearch()" class="bg-emerald-300 rounded-md p-2 m-2">Search</button>
+                <button onclick="tagsSearch()" class="bg-emerald-300 rounded-md p-2 m-2 text-black">Search</button>
             </label>
 
             <label class="flex flex-col text-white gap-2">

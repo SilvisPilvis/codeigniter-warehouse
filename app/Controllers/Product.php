@@ -2,19 +2,23 @@
 
 namespace App\Controllers;
 
-class FilterQueryBuilder {
+class FilterQueryBuilder
+{
     private $conditions = [];
     private $queryParts = [];
 
-    public function buildFilter($params) {
+    public function buildFilter($params)
+    {
         $order = $params['order'] ?? 'id';
         $filters = $this->parseFilters($params);
-        
+
         foreach ($filters as $filterType => $values) {
-            if (empty($values)) continue;
-            
+            if (empty($values)) {
+                continue;
+            }
+
             $subConditions = [];
-            
+
             switch ($filterType) {
                 case 'id':
                     foreach ($values as $range) {
@@ -67,7 +71,7 @@ class FilterQueryBuilder {
                     }
                     break;
             }
-            
+
             if (!empty($subConditions)) {
                 // Join same-type conditions with OR
                 $this->queryParts[] = '(' . implode(' OR ', $subConditions) . ')';
@@ -78,9 +82,10 @@ class FilterQueryBuilder {
         return empty($this->queryParts) ? 'id > 0' : implode(' AND ', $this->queryParts);
     }
 
-    private function parseFilters($params) {
+    public function parseFilters($params)
+    {
         $filters = [];
-        
+
         // Parse each filter type
         if (!empty($params['id'])) {
             $filters['id'] = explode('|', $params['id']);
@@ -109,8 +114,102 @@ class FilterQueryBuilder {
         if (!empty($params['date'])) {
             $filters['date'] = explode('|', $params['date']);
         }
-        
+
         return $filters;
+    }
+
+    /**
+     * Returns all GET parameters as an associative array
+     *
+     * @return array
+     */
+    public function getQueryParams(): array
+    {
+        $queryParams = [];
+
+        // Get all GET parameters
+        $params = $_GET;
+
+        // Filter out empty values and create clean array
+        foreach ($params as $key => $value) {
+            if (!empty($value)) {
+                $queryParams[$key] = $value;
+            }
+        }
+
+        return $queryParams;
+    }
+
+    /**
+     * Counts matches for each parameter in the database
+     *
+     * @param PDO $pdo Database connection
+     * @return array Associative array of parameter counts
+     */
+    public function getParameterMatchCounts($model): array
+    {
+        $params = $this->getQueryParams();
+        $counts = [];
+
+        foreach ($params as $param => $value) {
+            // Skip certain parameters that shouldn't be counted
+            if (in_array($param, ['order', 'page', 'limit'])) {
+                continue;
+            }
+
+            $query = $this->buildCountQuery($param, $value);
+
+            if ($query) {
+                // $stmt = $pdo->prepare($query);
+                // $stmt->execute();
+                $counts = $model->query($query)->getResult();
+                // $counts[$param] = (int)$stmt->fetchColumn();
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Builds the appropriate COUNT query based on parameter type
+     *
+     * @param string $param Parameter name
+     * @param string $value Parameter value
+     * @return string|null SQL query or null if parameter type is not supported
+     */
+    private function buildCountQuery(string $param, string $value): ?string
+    {
+        switch ($param) {
+            case 'id':
+                list($min, $max) = explode('|', $value . '|' . $value);
+                return "SELECT COUNT(*) as ".$value." FROM product WHERE id BETWEEN ".$min." AND ".$max;
+
+            case 'weight':
+            case 'size':
+                list($min, $max) = explode('|', $value . '|' . $value);
+                return "SELECT COUNT(*) ".$value." FROM product WHERE metadata->>'$param' BETWEEN ".$min." AND ".$max;
+
+            case 'name':
+                return "SELECT COUNT(*) FROM product WHERE name = '".$value."'";
+
+            case 'manufacturer':
+                return "SELECT COUNT(*) FROM product WHERE metadata->>'manufacturer' = '".$value."'";
+
+            case 'template':
+                return "SELECT COUNT(*) FROM product WHERE metadata->>'template' ILIKE "."'%".$value."%'";
+
+            case 'tags':
+                return "SELECT COUNT(*) FROM product WHERE (metadata->>'tags')::jsonb @> '[\"".$value."\"]'";
+
+            case 'category':
+                return "SELECT COUNT(*) FROM product WHERE category_id::text LIKE '%".$value."%'";
+
+            case 'date':
+                return "SELECT COUNT(*) FROM product WHERE created_at::date = ".$value."::date";
+
+            default:
+                return null;
+        }
     }
 
 }
@@ -153,7 +252,7 @@ class Product extends BaseController
 
         $params = [
             'order' => $order,
-            'id' => $criteriaMin && $criteriaMax ? 
+            'id' => $criteriaMin && $criteriaMax ?
             $criteriaMin . '|' . $criteriaMax : '',
             'filter' => $filter ?? 'id >',
             'weight' => $weight,
@@ -348,6 +447,61 @@ class Product extends BaseController
             )
         );
         // --- end get all product dates
+
+        // --- count all availible fields
+        $data['availible'] = $productModel->query("WITH base AS (
+    -- Table columns
+    SELECT 
+        a.attname as column_name,
+        (SELECT COUNT(*) FROM product) as record_count
+    FROM pg_catalog.pg_attribute a
+    WHERE a.attrelid = 'product'::regclass
+        AND a.attnum > 0 
+        AND NOT a.attisdropped
+    
+    UNION
+    
+    -- First level JSON keys
+    SELECT 
+        jsonb_object_keys(metadata) as column_name,
+        COUNT(*) as record_count
+    FROM product
+    GROUP BY jsonb_object_keys(metadata)
+    
+    UNION
+    
+    -- Nested JSON keys
+    SELECT 
+        jsonb_object_keys(value::jsonb) as column_name,
+        COUNT(*) as record_count
+    FROM product, 
+    jsonb_each(metadata)
+    WHERE jsonb_typeof(value) = 'object'
+    GROUP BY jsonb_object_keys(value::jsonb)
+)
+SELECT 
+    column_name,
+    record_count
+FROM base
+            ORDER BY column_name;")->getResult();
+        $availible = [];
+        foreach ($data['availible'] as $value) {
+            $value = (array)$value;
+            if (!array_key_exists($value['column_name'], $availible)) {
+                $availible[$value['column_name']] = $value['record_count'];
+            } else {
+                // $availible[$value['column_name']] += $value['record_count'];
+            }
+            // array_push($availible, $value);
+            // array_push($availible, $value[0]);
+        }
+        $data['availible'] = $availible;
+
+        // $data['params'] = $filterBuilder->parseFilters($params);
+        // $data['params'] = $filterBuilder->getQueryParams();
+        $data['params'] = $filterBuilder->getParameterMatchCounts($productModel);
+
+        // $data['availible'] = array_merge(array_keys($data['availible']), array_values($data['availible']));
 
         return view('product_show', $data);
     }
