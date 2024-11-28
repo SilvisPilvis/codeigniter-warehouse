@@ -578,24 +578,20 @@ FROM base
                 // $availible[$value['column_name']] += $value['record_count'];
             }
         }
-        // $data['availible'] = $availible;
+        $data['availible'] = $availible;
 
         $data['sigma'] = updateAvailabilityCounts($productModel, $data['availible'], $params);
-        $sigma = [];
-        foreach ($data['sigma'] as $value) {
-            $value = (array)$value;
-            if (!array_key_exists($value['column_name'], $availible)) {
-                $sigma[$value['column_name']] = $value['record_count'];
-            } else {
-                // $sigma['test'] = 'test';
-                $sigma[$value['column_name']] = $value['record_count'];
-            }
-        }
-        $data['sigma'] = $sigma;
-        // print_r($data['sigma']['id']);
-        // print_r($sigma['id']);
-
-        $data['available'] = $sigma;
+        $data['sigma']['id'] = $availible['id'];
+        // $sigma = [];
+        // foreach ($data['sigma'] as $value) {
+        //     $value = (array)$value;
+        //     if (!array_key_exists($value['column_name'], $sigma)) {
+        //         $sigma[$value['column_name']] = $value['record_count'];
+        //     } else {
+        //     }
+        // }
+        // print_r($data['sigma']);
+        $data['availible'] = $data['sigma'];
         $data['params'] = $filterBuilder->getParameterMatchCounts($productModel);
 
         return view('product_show', $data);
