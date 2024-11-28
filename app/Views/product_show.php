@@ -200,7 +200,7 @@ function string2array($string)
         
     <main class="flex flex-row flex-wrap w-full box-border gap-4">
         <aside class="flex flex-col w-56 bg-gray-600 rounded-r-md min-h-screen" id="sidebar">
-        <?= print_r($params) ?>
+            <?= print_r($availible) ?>
             <label class="flex flex-col text-black">
                 Order By:
                 <select name="order" id="order" class="rounded-md p-2 m-2 text-black" onchange="order()">
