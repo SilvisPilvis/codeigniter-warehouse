@@ -117,7 +117,11 @@ function string2array($string)
     }
 
     function clearFilter() {
-        document.location = document.location.href.split("?")[0];
+        let url = document.location.href.split("?")[0];
+        if(url.at(-1) === "/"){
+            url = url.slice(0, -1);
+        }
+        document.location = url;
     }
 
     // Initialize values from URL parameters on page load
@@ -200,7 +204,6 @@ function string2array($string)
         
     <main class="flex flex-row flex-wrap w-full box-border gap-4">
         <aside class="flex flex-col w-56 bg-gray-600 rounded-r-md min-h-screen" id="sidebar">
-            <?= print_r($availible) ?>
             <label class="flex flex-col text-black">
                 Order By:
                 <select name="order" id="order" class="rounded-md p-2 m-2 text-black" onchange="order()">
@@ -218,6 +221,7 @@ function string2array($string)
                 </select>
             </label>
 
+            <?php if(array_key_exists('id', $availible)) : ?>
             <details>
                 <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Id [<?= $availible['id'] ?>]:</summary>
                  <label class="flex flex-col text-black w-full" id="filter-num">
@@ -225,15 +229,18 @@ function string2array($string)
                     <?php include_once "doubleslider.php"; ?>
                  </label>
             </details>
-            
+            <?php endif; ?>
+
+            <?php if(array_key_exists('size', $availible)) : ?>
             <details>
             <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Size [<?= $availible['size'] ?>]:</summary>
             <label class="flex flex-col text-black w-full" id="filter-num-detailed">
                 <?php include_once "detailed-slider.php"; ?>
             </label>
             </details>
-            
+            <?php endif; ?>
 
+            <?php if(array_key_exists('manufacturer', $availible)) : ?>
             <details>
             <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Manufacturer [<?= $availible['manufacturer'] ?>]:</summary>
             <label class="flex flex-col" id="filter-str-manufacturer">
@@ -248,7 +255,9 @@ function string2array($string)
                 <!-- <button onclick="filter('#criteria-str-val-manufcturer', '#criteria-str-val-manufcturer')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
             </details>
+            <?php endif; ?>
 
+            <?php if(array_key_exists('name', $availible)) : ?>
             <details>
             <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Name [<?= $availible['name'] ?>]:</summary>
             <label class="flex flex-col" id="filter-str-name">
@@ -265,7 +274,9 @@ function string2array($string)
                 <!-- <button onclick="filter('#criteria-str-val-name', '#criteria-str-val-name')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
             </details>
+            <?php endif; ?>
 
+            <?php if(array_key_exists('created_at', $availible)) : ?>
             <details>
             <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>">Filter Date Created [<?= $availible['created_at'] ?>]:</summary>
             <label class="flex flex-col text-black w-full" id="filter-date">
@@ -279,10 +290,12 @@ function string2array($string)
                 <!-- <button onclick="filter('#filter-date', '#filter-date')" class="bg-emerald-300 rounded-md p-2 m-2">Filter</button> -->
             </label>
             </details>
+            <?php endif; ?>
 
             <p>Filter template:</p>
 
             <?php foreach($test as $key => $value) : ?>
+            <?php if(array_key_exists($key, $availible)) : ?>
             <details>
                 <summary class="<?= "list-image-[url(".base_url('/uploads/chevron-down1.png').")]"?>"><?= $key." [".$availible[$key]."]" ?></summary>
                 <?php for($i = 0; $i < count($value); $i++) : ?>
@@ -292,6 +305,7 @@ function string2array($string)
                     </label>
                 <?php endfor; ?>
             </details>
+            <?php endif; ?>
             <?php endforeach; ?>
 
             <button class="bg-emerald-300 rounded-md p-2 m-2" onclick="clearFilter()">Clear</button>

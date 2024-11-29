@@ -12,8 +12,8 @@ function updateAvailabilityCounts($productModel, $available, $filterParams, $fil
     $conditions = [];
     $bindings = [];
 
-    // Table columns that are not in metadata
-    $tableColumns = ['id', 'name', 'created_at', 'updated_at'];
+    // Table columns from schema
+    $tableColumns = ['id', 'name', 'created_at', 'updated_at', 'category_id'];
 
     // Build filter conditions
     foreach ($filterKeys as $key) {
@@ -68,30 +68,56 @@ function updateAvailabilityCounts($productModel, $available, $filterParams, $fil
 
     $whereClause = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
 
-    $query = "SELECT 
-        unnest(array['id', 'name', 'created_at', 'updated_at'] || 
-              array(SELECT DISTINCT jsonb_object_keys(metadata) FROM product)) as column_name,
-        COUNT(*) as filtered_count
-    FROM product
-    $whereClause
-    GROUP BY 1";
+    $query = "WITH filtered_products AS (
+        SELECT * FROM product $whereClause
+    ),
+    schema_columns AS (
+        SELECT column_name, filtered_count
+        FROM (
+            VALUES 
+                ('id', (SELECT COUNT(*) FROM filtered_products)),
+                ('name', (SELECT COUNT(*) FROM filtered_products)),
+                ('created_at', (SELECT COUNT(*) FROM filtered_products)),
+                ('updated_at', (SELECT COUNT(*) FROM filtered_products)),
+                ('category_id', (SELECT COUNT(*) FROM filtered_products))
+        ) AS t(column_name, filtered_count)
+    ),
+    metadata_keys AS (
+        SELECT 
+            key as column_name,
+            COUNT(*) as filtered_count
+        FROM filtered_products,
+            jsonb_object_keys(metadata) as key
+        WHERE metadata IS NOT NULL
+            AND key NOT IN ('category_id', 'image')
+        GROUP BY key
+    )
+    SELECT column_name, filtered_count 
+    FROM (
+        SELECT * FROM schema_columns
+        UNION ALL
+        SELECT * FROM metadata_keys
+    ) AS combined_results";
 
     try {
         $result = $productModel->query($query, $bindings)->getResult();
-
         $updatedAvailable = $available;
+
+        $temp = [];
         foreach ($result as $row) {
             $row = (array)$row;
             $columnName = $row['column_name'];
-            $filteredCount = (int)$row['filtered_count'];
-
             if (isset($updatedAvailable[$columnName])) {
-                $updatedAvailable[$columnName] = $filteredCount;
+                $temp[$columnName] = (int)$row['filtered_count'];
+                // $updatedAvailable[$columnName] = (int)$row['filtered_count'];
             }
         }
 
-        return $updatedAvailable;
-
+        // echo $query;
+        // remove category_id, metadata, template, image from updatedAvailable
+        unset($updatedAvailable['category_id'], $updatedAvailable['metadata'], $updatedAvailable['template'], $updatedAvailable['image']);
+        // print_r($temp);
+        return $temp;
     } catch (Exception $e) {
         log_message('error', 'Query error: ' . $e->getMessage());
         log_message('error', 'Query: ' . $query);
@@ -368,55 +394,6 @@ class Product extends BaseController
         $filterBuilder = new FilterQueryBuilder();
         $filter = $filterBuilder->buildFilter($params);
 
-        // switch ($filter) {
-        //     case "id":
-        //         $filter = "id BETWEEN ".$criteriaMin." AND ".$criteriaMax;
-        //         break;
-        //     case "weight":
-        //         $filter = "metadata->>'weight' BETWEEN '".$criteriaMin."' AND '".$criteriaMax."'";
-        //         break;
-        //     case "size":
-        //         $filter = "metadata->>'size' BETWEEN '".$criteriaMin."' AND '".$criteriaMax."'";
-        //         break;
-        //     case "name":
-        //         $filter = $filter." = '".$criteriaMin."'";
-        //         $criteriaMax = "";
-        //         $criteriaMin = "";
-        //         break;
-        //     case "manufacturer":
-        //         $filter = "metadata->>'manufacturer' = "."'".$criteriaMin."'";
-        //         $criteriaMax = "";
-        //         $criteriaMin = "";
-        //         break;
-        //     case "template":
-        //         $filter = "metadata->>'template' ILIKE "."'%".$criteriaMin."%'";
-        //         $criteriaMax = "";
-        //         $criteriaMin = "";
-        //         break;
-        //     default:
-        //         $filter = "id > 0";
-        //         break;
-        // }
-
-        // if ($tags) {
-        //     $filter = "";
-        //     foreach (explode("|", $tags) as $index => $tag) {
-        //         if ($index === 0) {
-        //             $filter = "(metadata->>'tags')::jsonb @> '[\"" . $tag . "\"]'";
-        //         } else {
-        //             $filter .= " AND (metadata->>'tags')::jsonb @> '[\"" . $tag . "\"]'";
-        //         }
-        //     }
-        // }
-
-        // // Add category search
-        // if ($categories) {
-        //     if ($filter) {
-        //         $filter .= " AND ";
-        //     }
-        //     $filter .= "category_id::text LIKE '%" . $categories . "%'";
-        // }
-
         // echo $filter;
 
         $productModel = new \App\Models\ProductModel();
@@ -472,7 +449,7 @@ class Product extends BaseController
 
         $padded = array_merge(...$padded);
 
-        // instead sheck if  has more than 1 ":" and if so then leave fieldtype:values else leave fieldtype
+        // instead check if  has more than 1 ":" and if so then leave fieldtype:values else leave fieldtype
         foreach ($padded as $key => $value) {
             if (explode(":", $padded[$key]) > 1) {
                 if (explode(':', $padded[$key])[0] == "checkbox" || explode(':', $padded[$key])[0] == "radio" || explode(':', $padded[$key])[0] == "select") {
@@ -588,19 +565,15 @@ FROM base
             if (!array_key_exists($value['column_name'], $availible)) {
                 $availible[$value['column_name']] = $value['record_count'];
             } else {
-                // $availible[$value['column_name']] += $value['record_count'];
             }
         }
-        $data['availible'] = $availible;
 
-        $data['sigma'] = updateAvailabilityCounts($productModel, $data['availible'], $params, $params['filter']);
+        $sigma = updateAvailabilityCounts($productModel, $availible, $params, $params['filter']);
 
-        print_r($data['sigma']);
+        $data['availible'] = $sigma;
+        $data['params'] = $filterBuilder->getParameterMatchCounts($productModel);
 
-        // $data['availible'] = $data['sigma'];
-        // $data['params'] = $filterBuilder->getParameterMatchCounts($productModel);
-
-        // return view('product_show', $data);
+        return view('product_show', $data);
     }
 
     public function getAllTags()
