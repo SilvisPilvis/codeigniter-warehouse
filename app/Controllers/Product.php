@@ -2,89 +2,102 @@
 
 namespace App\Controllers;
 
-function updateAvailabilityCounts($productModel, $available, $params)
+function updateAvailabilityCounts($productModel, $available, $filterParams, $filter)
 {
-    if (empty($params)) {
+    if (empty($filter)) {
         return $available;
     }
 
-    // Build conditions and bindings
+    $filterKeys = explode('|', $filter);
     $conditions = [];
     $bindings = [];
-    foreach ($params as $key => $value) {
-        // Handle only valid columns and metadata fields
-        if ($key === 'category_id') {
-            $conditions[] = "\"category_id\" = ?";
-            $bindings[] = $value;
-        } elseif ($key === 'name') {
-            $conditions[] = "\"name\" = ?";
-            $bindings[] = $value;
-        } elseif (in_array($key, ['esr', 'sigma', 'template', 'test'])) {
-            // These are metadata fields
-            $conditions[] = "metadata->>'$key' = ?";
-            $bindings[] = $value;
+
+    // Table columns that are not in metadata
+    $tableColumns = ['id', 'name', 'created_at', 'updated_at'];
+
+    // Build filter conditions
+    foreach ($filterKeys as $key) {
+        if (isset($filterParams[$key])) {
+            $value = $filterParams[$key];
+            if (empty($value)) {
+                continue;
+            }
+
+            if (in_array($key, $tableColumns)) {
+                // Direct table columns
+                $values = explode('|', $value);
+                if (count($values) > 1) {
+                    $orParts = [];
+                    foreach ($values as $val) {
+                        $orParts[] = "$key = ?";
+                        $bindings[] = $val;
+                    }
+                    $conditions[] = '(' . implode(' OR ', $orParts) . ')';
+                } else {
+                    $conditions[] = "$key = ?";
+                    $bindings[] = $value;
+                }
+            } elseif ($key === 'size') {
+                // Size handling
+                $sizes = explode('|', $value);
+                if (count($sizes) === 2) {
+                    $conditions[] = "CAST(metadata->>'size' AS FLOAT) BETWEEN ? AND ?";
+                    $bindings[] = min($sizes);
+                    $bindings[] = max($sizes);
+                } else {
+                    $conditions[] = "CAST(metadata->>'size' AS FLOAT) = ?";
+                    $bindings[] = $sizes[0];
+                }
+            } else {
+                // Metadata fields
+                $values = explode('|', $value);
+                if (count($values) > 1) {
+                    $orParts = [];
+                    foreach ($values as $val) {
+                        $orParts[] = "metadata->>'$key' = ?";
+                        $bindings[] = $val;
+                    }
+                    $conditions[] = '(' . implode(' OR ', $orParts) . ')';
+                } else {
+                    $conditions[] = "metadata->>'$key' = ?";
+                    $bindings[] = $value;
+                }
+            }
         }
     }
 
-    $whereClause = !empty($conditions) ? "WHERE " . implode(" AND ", $conditions) : "";
+    $whereClause = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
 
-    $query = "WITH filtered AS (
-        -- Get filtered products first
-        WITH filtered_products AS (
-            SELECT * FROM product
-            $whereClause
-        )
-        -- Count by column
-        SELECT 
-            a.attname as column_name,
-            (SELECT COUNT(*) FROM filtered_products) as filtered_count
-        FROM pg_catalog.pg_attribute a
-        WHERE a.attrelid = 'product'::regclass
-            AND a.attnum > 0 
-            AND NOT a.attisdropped
-        
-        UNION
-        
-        -- First level JSON keys from metadata
-        SELECT 
-            jsonb_object_keys(metadata) as column_name,
-            COUNT(*) as filtered_count
-        FROM filtered_products
-        GROUP BY jsonb_object_keys(metadata)
-        
-        UNION
-        
-        -- Nested JSON keys from metadata
-        SELECT 
-            jsonb_object_keys(value::jsonb) as column_name,
-            COUNT(*) as filtered_count
-        FROM filtered_products,
-        jsonb_each(metadata)
-        WHERE jsonb_typeof(value) = 'object'
-        GROUP BY jsonb_object_keys(value::jsonb)
-    )
-    SELECT 
-        column_name,
-        filtered_count
-    FROM filtered
-    ORDER BY column_name";
+    $query = "SELECT 
+        unnest(array['id', 'name', 'created_at', 'updated_at'] || 
+              array(SELECT DISTINCT jsonb_object_keys(metadata) FROM product)) as column_name,
+        COUNT(*) as filtered_count
+    FROM product
+    $whereClause
+    GROUP BY 1";
 
-    // Execute the query
-    $result = $productModel->query($query, $bindings)->getResult();
+    try {
+        $result = $productModel->query($query, $bindings)->getResult();
 
-    // Update the available counts
-    $updatedAvailable = $available;
-    foreach ($result as $row) {
-        $row = (array)$row;
-        $columnName = $row['column_name'];
-        $filteredCount = $row['filtered_count'];
+        $updatedAvailable = $available;
+        foreach ($result as $row) {
+            $row = (array)$row;
+            $columnName = $row['column_name'];
+            $filteredCount = (int)$row['filtered_count'];
 
-        if (isset($updatedAvailable[$columnName])) {
-            $updatedAvailable[$columnName] = $filteredCount;
+            if (isset($updatedAvailable[$columnName])) {
+                $updatedAvailable[$columnName] = $filteredCount;
+            }
         }
-    }
 
-    return $updatedAvailable;
+        return $updatedAvailable;
+
+    } catch (Exception $e) {
+        log_message('error', 'Query error: ' . $e->getMessage());
+        log_message('error', 'Query: ' . $query);
+        log_message('error', 'Bindings: ' . print_r($bindings, true));
+        return $available;
+    }
 }
 
 class FilterQueryBuilder
@@ -580,21 +593,14 @@ FROM base
         }
         $data['availible'] = $availible;
 
-        $data['sigma'] = updateAvailabilityCounts($productModel, $data['availible'], $params);
-        $data['sigma']['id'] = $availible['id'];
-        // $sigma = [];
-        // foreach ($data['sigma'] as $value) {
-        //     $value = (array)$value;
-        //     if (!array_key_exists($value['column_name'], $sigma)) {
-        //         $sigma[$value['column_name']] = $value['record_count'];
-        //     } else {
-        //     }
-        // }
-        // print_r($data['sigma']);
-        $data['availible'] = $data['sigma'];
-        $data['params'] = $filterBuilder->getParameterMatchCounts($productModel);
+        $data['sigma'] = updateAvailabilityCounts($productModel, $data['availible'], $params, $params['filter']);
 
-        return view('product_show', $data);
+        print_r($data['sigma']);
+
+        // $data['availible'] = $data['sigma'];
+        // $data['params'] = $filterBuilder->getParameterMatchCounts($productModel);
+
+        // return view('product_show', $data);
     }
 
     public function getAllTags()
